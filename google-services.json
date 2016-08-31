@@ -1,0 +1,59 @@
+{
+  "project_info": {
+    "project_number": "1064930930242",
+    "project_id": "teketysapp",
+    "name": "TempleTickets"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1064930930242:android:38717f2d84e7db94",
+        "android_client_info": {
+          "package_name": "com.teketys.templetickets"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1064930930242-v6qvc83rij9eu7bu3pqqi0bhd2v62i0t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teketys.templetickets",
+            "certificate_hash": "B7C6F1075430D6CA74E73375795B8631E02A7DA3"
+          }
+        },
+        {
+          "client_id": "1064930930242-rouublpd553dk70s31ohrh1o6k0teu5u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIjZ-j_fVhnLWiSE9fmBFFFUPhObeuGqA"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 2,
+          "analytics_property": {
+            "tracking_id": "UA-82236225-1"
+          }
+        },
+        "cloud_messaging_service": {
+          "status": 2,
+          "apns_config": []
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "google_signin_service": {
+          "status": 1
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
