@@ -121,7 +121,8 @@
                                 android:padding="6dp"
                                 android:textColor="@color/textIconColorPrimary"
                                 android:textSize="15sp"
-                                tools:text="-50%"/>
+                                tools:text="-50%"
+                                android:visibility="invisible" />
                         </RelativeLayout>
                     </LinearLayout>
 
@@ -132,39 +133,95 @@
                         android:layout_marginTop="@dimen/base_margin_vertical_half"
                         android:background="@color/line_light_grey"/>
 
-                <LinearLayout
+                    <TextView
+                        android:id="@+id/booking_schedule"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:textSize="16sp"
+                        tools:text="Booking Schedule"
+                        android:paddingBottom="10dp"
+                        android:text="Booking Schedule" />
+
+                    <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:paddingLeft="@dimen/base_margin_horizontal"
                     android:paddingRight="@dimen/base_margin_horizontal">
 
-                    <Button
-                        android:id="@+id/product_bookingdate_btn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Booking Date"
-                        />
+                        <TextView
+                            android:id="@+id/product_bookingdate_label"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:padding="6dp"
+                            android:textColor="@color/colorAccent"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            tools:text="Booking Date"
+                            android:singleLine="false"
+                            android:visibility="visible"
+                            android:layout_gravity="center_vertical"
+                            android:text="Booking Date" />
 
-                    <TextView
-                        android:id="@+id/product_bookingdate_tv"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:textColor="@color/colorAccent"
-                        android:textSize="18sp"
-                        tools:text="Select Date"
-                        android:enabled="true" />
+                        <TextView
+                            android:id="@+id/product_bookingdate_tv"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/primary_dark_material_dark"
+                            android:textSize="16sp"
+                            tools:text="Select Date"
+                            android:enabled="true"
+                            android:visibility="visible"
+                            android:inputType="date"
+                            android:layout_gravity="center_horizontal"
+                            android:minHeight="1dp"
+                            android:minWidth="1dp"
+                            android:paddingTop="14dp"
+                            android:paddingBottom="14dp"
+                            android:paddingLeft="30dp"
+                            android:background="@drawable/abc_edit_text_material" />
 
-                    <Spinner
+                        <Button
+                            android:id="@+id/product_bookingdate_btn"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:drawable/ic_menu_month" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingLeft="@dimen/base_margin_horizontal"
+                        android:paddingRight="@dimen/base_margin_horizontal">
+
+                        <TextView
+                            android:id="@+id/product_bookingtime_label"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:padding="6dp"
+                            android:textColor="@color/colorAccent"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            tools:text="Booking Time"
+                            android:visibility="visible"
+                            android:layout_gravity="center_vertical"
+                            android:text="Booking Time" />
+
+                        <Spinner
                         android:id="@+id/product_time_spinner"
-                        android:layout_width="0dp"
+                        android:layout_width="150dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:background="@drawable/spinner_background_black_baseline"
                         android:gravity="start"
                         android:paddingBottom="8dp"
-                        android:spinnerMode="dialog" />
+                        android:spinnerMode="dialog"
+                        android:visibility="visible"
+                            android:paddingLeft="30dp"
+                            android:layout_gravity="center_horizontal" />
 
                     </LinearLayout>
 
@@ -192,7 +249,8 @@
                             android:background="@drawable/spinner_background_black_baseline"
                             android:gravity="start"
                             android:paddingBottom="8dp"
-                            android:spinnerMode="dialog"/>
+                            android:spinnerMode="dialog"
+                            android:visibility="invisible" />
 
                         <Spinner
                             android:id="@+id/product_size_spinner"
@@ -202,7 +260,8 @@
                             android:background="@drawable/spinner_background_black_baseline"
                             android:gravity="start"
                             android:paddingBottom="8dp"
-                            android:spinnerMode="dialog" />
+                            android:spinnerMode="dialog"
+                            android:visibility="invisible" />
 
                     </LinearLayout>
 

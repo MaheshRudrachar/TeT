@@ -9,6 +9,26 @@ import java.util.List;
  */
 public class OrderConfirmResponse {
 
+    private String statusCode;
+
+    public String getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(String statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
+    }
+
+    private String statusText;
+
     public OrderConfirm getConfirm() {
         return confirm;
     }

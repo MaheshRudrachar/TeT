@@ -58,8 +58,8 @@ public class ProductImagesRecyclerAdapter extends RecyclerView.Adapter<ProductIm
         Picasso.with(context)
                 .load(productImageUrl)
                 .fit().centerInside()
-                .placeholder(R.drawable.placeholder_loading)
-                .error(R.drawable.placeholder_error)
+                .placeholder(R.drawable.placeholder_loading1)
+                .error(R.drawable.placeholder_error1)
                 .into(holder.productImage);
     }
 

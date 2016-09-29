@@ -42,6 +42,10 @@ public class JsonUtils {
     public static final String TAG_ZIP = "zip";
     public static final String TAG_PHONE = "phone";
     public static final String TAG_GENDER = "gender";
+    public static final String TAG_PLATFORM = "platform";
+    public static final String TAG_DEVICE_TOKEN = "device_token";
+    public static final String TAG_CUSTOM_FIELD = "custom_field";
+
     public static final String TAG_CONFIRM = "confirm";
     public static final String TAG_FIRST_NAME = "firstname";
     public static final String TAG_LAST_NAME = "lastname";
@@ -49,15 +53,24 @@ public class JsonUtils {
     public static final String TAG_ADDRESS1 = "address_1";
     public static final String TAG_ADDRESS2 = "address_2";
     public static final String TAG_COUNTRY = "country";
-    public static final String TAG_ZONE = "zone_id";
+    public static final String TAG_ZONE_ID = "zone_id";
+    public static final String TAG_ZONE = "zone";
     public static final String TAG_POST_CODE = "postcode";
     public static final String TAG_COMPANY = "company";
+    public static final String TAG_COMPANY_ID = "company_id";
     public static final String TAG_SHIPPING_ADDRESS = "shipping_address";
     public static final String TAG_SHIPPING_METHOD = "shipping_method";
     public static final String TAG_PAYMENT_METHOD = "payment_method";
+    public static final String TAG_PAYMENT_ADDRESS = "payment_address";
     public static final String TAG_AGREE = "agree";
     public static final String TAG_COMMENT = "comment";
     public static final String TAG_COUNTRY_ID = "country_id";
+    public static final String TAG_ADDRESSES = "addresses";
+    public static final String TAG_ADDRESS_ID = "address_id";
+    public static final String TAG_EXISTING = "existing";
+    public static final String TAG_DATA = "data";
+    public static final String TAG_FAX = "fax";
+    public static final String TAG_TAX = "tax_id";
 
     // ORDERS
     public static final String TAG_DATE_CREATED = "date_created";

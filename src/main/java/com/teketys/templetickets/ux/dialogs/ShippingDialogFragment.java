@@ -178,38 +178,51 @@ public class ShippingDialogFragment extends DialogFragment {
                 new Response.Listener<BranchesRequest>() {
                     @Override
                     public void onResponse(@NonNull BranchesRequest response) {
-                        Timber.d("GetBranches response: %s", response.toString());
-                        setContentVisible(true);
-
-                        if (response.getBranches() != null && response.getBranches().size() >= 0) {
-                            shippingEmpty.setVisibility(View.GONE);
-                            shippingList.setVisibility(View.VISIBLE);
-                            final BranchesAdapter branchesAdapter = new BranchesAdapter(getActivity(), response.getBranches());
-
-                            shippingList.setAdapter(branchesAdapter);
-                            shippingList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                                private long mLastClickTime = 0;
-
-                                @Override
-                                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                                    if (SystemClock.elapsedRealtime() - mLastClickTime < 1000)
-                                        return;
-                                    mLastClickTime = SystemClock.elapsedRealtime();
-
-                                    Branch branch = (Branch) shippingList.getItemAtPosition(position);
-                                    if (branch != null) {
-                                        FragmentManager fm = thisFragment.getFragmentManager();
-                                        MapDialogFragment mapDialog = MapDialogFragment.newInstance(branch);
-                                        mapDialog.setRetainInstance(true);
-                                        mapDialog.show(fm, MapDialogFragment.class.getSimpleName());
-                                    }
+                        if (response != null) {
+                            if(response.getStatusText() != null && response.getStatusCode() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
                                 }
-                            });
-                        } else {
-                            shippingEmpty.setVisibility(View.VISIBLE);
-                            shippingList.setVisibility(View.GONE);
+                            }else {
+                                Timber.d("GetBranches response: %s", response.toString());
+                                setContentVisible(true);
+
+                                if (response.getBranches() != null && response.getBranches().size() >= 0) {
+                                    shippingEmpty.setVisibility(View.GONE);
+                                    shippingList.setVisibility(View.VISIBLE);
+                                    final BranchesAdapter branchesAdapter = new BranchesAdapter(getActivity(), response.getBranches());
+
+                                    shippingList.setAdapter(branchesAdapter);
+                                    shippingList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                        private long mLastClickTime = 0;
+
+                                        @Override
+                                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                            if (SystemClock.elapsedRealtime() - mLastClickTime < 1000)
+                                                return;
+                                            mLastClickTime = SystemClock.elapsedRealtime();
+
+                                            Branch branch = (Branch) shippingList.getItemAtPosition(position);
+                                            if (branch != null) {
+                                                FragmentManager fm = thisFragment.getFragmentManager();
+                                                MapDialogFragment mapDialog = MapDialogFragment.newInstance(branch);
+                                                mapDialog.setRetainInstance(true);
+                                                mapDialog.show(fm, MapDialogFragment.class.getSimpleName());
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    shippingEmpty.setVisibility(View.VISIBLE);
+                                    shippingList.setVisibility(View.GONE);
+                                }
+                            }
                         }
+                        else
+                            Timber.d("Null response during getOnlyBranches....");
                     }
+
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {

@@ -28,7 +28,10 @@ import com.teketys.templetickets.utils.ccavenue.RSAUtility;
 import com.teketys.templetickets.utils.ccavenue.ServiceHandler;
 import com.teketys.templetickets.utils.ccavenue.ServiceUtility;
 import com.teketys.templetickets.R;
+import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.dialogs.OrderCreateSuccessDialogFragment;
+import com.teketys.templetickets.ux.fragments.OrderCreateFragment;
+import com.teketys.templetickets.ux.fragments.OrdersHistoryFragment;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
@@ -87,7 +90,7 @@ public class WebViewActivity extends AppCompatActivity {
 	/**
 	 * Async task class to get json by making HTTP call
 	 * */
-	private class RenderView extends AsyncTask<PaymentArgs, Void, String> {
+	private class RenderView extends AsyncTask<PaymentArgs, Void, PaymentArgs> {
 		@Override
 		protected void onPreExecute() {
 			super.onPreExecute();
@@ -99,7 +102,7 @@ public class WebViewActivity extends AppCompatActivity {
 		}
 
 		@Override
-		protected String doInBackground(PaymentArgs... arg0) {
+		protected PaymentArgs doInBackground(PaymentArgs... arg0) {
 			// Creating service handler class instance
 			ServiceHandler sh = new ServiceHandler();
 			PaymentArgs pa = (PaymentArgs) arg0[0];
@@ -113,13 +116,6 @@ public class WebViewActivity extends AppCompatActivity {
 			params.add(new BasicNameValuePair(AvenuesParams.ACCESS_CODE, CONST.ACCESS_CODE));
 			params.add(new BasicNameValuePair(AvenuesParams.ORDER_ID, pa.getBillingOrderId()));
 			params.add(new BasicNameValuePair(AvenuesParams.BILLING_COUNTRY, CONST.BILLING_COUNTRY));
-			params.add(new BasicNameValuePair(AvenuesParams.BILLING_NAME, pa.getBillingName()));
-			params.add(new BasicNameValuePair(AvenuesParams.BILLING_ADDRESS, pa.getBillingAddress()));
-			params.add(new BasicNameValuePair(AvenuesParams.BILLING_CITY, pa.getBillingCity()));
-			params.add(new BasicNameValuePair(AvenuesParams.BILLING_STATE, pa.getBillingRegion()));
-			params.add(new BasicNameValuePair(AvenuesParams.BILLING_TEL, pa.getBillingPhone()));
-			params.add(new BasicNameValuePair(AvenuesParams.BILLING_ZIP, pa.getBillingZip()));
-			params.add(new BasicNameValuePair(AvenuesParams.BILLING_EMAIL, pa.getBillingEmail()));
 
 			String vResponse = sh.makeServiceCall(CONST.RSA_URL, ServiceHandler.POST, params);
 			System.out.println(vResponse);
@@ -128,16 +124,16 @@ public class WebViewActivity extends AppCompatActivity {
 				StringBuffer vEncVal = new StringBuffer("");
 				vEncVal.append(ServiceUtility.addToPostParams(AvenuesParams.AMOUNT, "1"));
 				vEncVal.append(ServiceUtility.addToPostParams(AvenuesParams.CURRENCY, CONST.CURRENCY));
-				vEncVal.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_COUNTRY, CONST.BILLING_COUNTRY));
+				//vEncVal.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_COUNTRY, CONST.BILLING_COUNTRY));
 
 				encVal = RSAUtility.encrypt(vEncVal.substring(0,vEncVal.length()-1), vResponse);
 			}
 
-			return result;
+			return pa;
 		}
 
 		@Override
-		protected void onPostExecute(String result) {
+		protected void onPostExecute(PaymentArgs result) {
 			super.onPostExecute(result);
 
 			class MyJavaScriptInterface
@@ -149,20 +145,48 @@ public class WebViewActivity extends AppCompatActivity {
 			    	String status = null;
 			    	if(html.indexOf("Failure")!=-1){
 			    		status = "Transaction Declined!";
-			    	}else if(html.indexOf("Success")!=-1){
+
+						DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(true, true);
+						thankYouDF.show(getSupportFragmentManager(), OrderCreateSuccessDialogFragment.class.getSimpleName());
+
+						//Redirect to order summary
+						//Fragment orderCreateFragment = OrderCreateFragment.newInstance(null);
+						//replaceFragment(orderCreateFragment, OrderCreateFragment.class.getSimpleName() + " - order create summary");
+
+					}else if(html.indexOf("Success")!=-1){
 			    		status = "Transaction Successful!";
-			    	}else if(html.indexOf("Aborted")!=-1){
+
+						DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(false, true);
+						thankYouDF.show(getSupportFragmentManager(), OrderCreateSuccessDialogFragment.class.getSimpleName());
+
+						//Redirect to orders page
+						//Fragment orderHistoryFragment = OrdersHistoryFragment.newInstance(null);
+						//replaceFragment(orderHistoryFragment, OrdersHistoryFragment.class.getSimpleName() + " - order history select");
+
+					}else if(html.indexOf("Aborted")!=-1){
 			    		status = "Transaction Cancelled!";
+
+						DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(true, true);
+						thankYouDF.show(getSupportFragmentManager(), OrderCreateSuccessDialogFragment.class.getSimpleName());
+
+						//Redirect to order summary
+						//Fragment orderCreateFragment = OrderCreateFragment.newInstance(null);
+						//replaceFragment(orderCreateFragment, OrderCreateFragment.class.getSimpleName() + " - order create summary");
+
 			    	}else{
 			    		status = "Status Not Known!";
+
+						DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(true, true);
+						thankYouDF.show(getSupportFragmentManager(), OrderCreateSuccessDialogFragment.class.getSimpleName());
+
+						//Redirect to order summary
+						Fragment orderCreateFragment = OrderCreateFragment.newInstance(null);
+						replaceFragment(orderCreateFragment, OrderCreateFragment.class.getSimpleName() + " - order create summary");
 			    	}
 			    	//Toast.makeText(getApplicationContext(), status, Toast.LENGTH_SHORT).show();
-			    	Intent intent = new Intent(getApplicationContext(),StatusActivity.class);
-					intent.putExtra("transStatus", status);
-					startActivity(intent);
-
-					DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(true);
-					thankYouDF.show(getSupportFragmentManager(), OrderCreateSuccessDialogFragment.class.getSimpleName());
+			    	//Intent intent = new Intent(getApplicationContext(),StatusActivity.class);
+					//intent.putExtra("transStatus", status);
+					//startActivity(intent);
 			    }
 			}
 
@@ -188,10 +212,22 @@ public class WebViewActivity extends AppCompatActivity {
 			});
 
 			/* An instance of this class will be registered as a JavaScript interface */
+			//Add billing address details here
+
 			StringBuffer params = new StringBuffer();
+
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_COUNTRY, CONST.BILLING_COUNTRY));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_NAME, result.getBillingName()));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_ADDRESS, result.getBillingAddress()));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_CITY, result.getBillingCity()));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_STATE, result.getBillingRegion()));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_TEL, result.getBillingPhone()));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_ZIP, result.getBillingZip()));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.BILLING_EMAIL, result.getBillingEmail()));
+
 			params.append(ServiceUtility.addToPostParams(AvenuesParams.ACCESS_CODE,CONST.ACCESS_CODE));
 			params.append(ServiceUtility.addToPostParams(AvenuesParams.MERCHANT_ID,CONST.MERCHANT_CODE));
-			params.append(ServiceUtility.addToPostParams(AvenuesParams.ORDER_ID,result));
+			params.append(ServiceUtility.addToPostParams(AvenuesParams.ORDER_ID,result.getBillingOrderId()));
 			params.append(ServiceUtility.addToPostParams(AvenuesParams.REDIRECT_URL,CONST.REDIRECT_URL));
 			params.append(ServiceUtility.addToPostParams(AvenuesParams.CANCEL_URL,CONST.CANCEL_URL));
 			params.append(ServiceUtility.addToPostParams(AvenuesParams.ENC_VAL, URLEncoder.encode(encVal)));
@@ -202,6 +238,18 @@ public class WebViewActivity extends AppCompatActivity {
 			} catch (Exception e) {
 				showToast("Exception occured while opening webview.");
 			}
+		}
+	}
+
+	private void replaceFragment(Fragment newFragment, String transactionTag) {
+		if (newFragment != null) {
+			android.support.v4.app.FragmentManager frgManager = getSupportFragmentManager();
+			FragmentTransaction fragmentTransaction = frgManager.beginTransaction();
+			fragmentTransaction.addToBackStack(transactionTag);
+			fragmentTransaction.replace(R.id.main_content_frame, newFragment).commit();
+			frgManager.executePendingTransactions();
+		} else {
+			Timber.e(new RuntimeException(), "Replace fragments with null newFragment parameter.");
 		}
 	}
 	

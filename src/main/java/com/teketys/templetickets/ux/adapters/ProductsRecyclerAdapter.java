@@ -94,13 +94,16 @@ public class ProductsRecyclerAdapter extends RecyclerView.Adapter<ProductsRecycl
         } else {*/
             Picasso.with(context).load(holder.product.getMainImage())
                     .fit().centerInside()
-                    .placeholder(R.drawable.placeholder_loading)
-                    .error(R.drawable.placeholder_error)
+                    .placeholder(R.drawable.placeholder_loading1)
+                    .error(R.drawable.placeholder_error1)
                     .into(holder.productImage);
         //}
 
         // Determine if product is on sale
-        double pr = holder.product.getPrice();
+        holder.productPriceTV.setVisibility(View.VISIBLE);
+        holder.productPriceDiscountTV.setVisibility(View.GONE);
+        holder.productPriceTV.setText(String.valueOf(holder.product.getPrice()));
+
         //double dis = holder.product.getDiscountPrice();
         /*if (pr == dis || Math.abs(pr - dis) / Math.max(Math.abs(pr), Math.abs(dis)) < 0.000001) {
             holder.productPriceTV.setVisibility(View.VISIBLE);

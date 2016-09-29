@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
@@ -44,6 +45,7 @@ import com.teketys.templetickets.api.GsonRequest;
 import com.teketys.templetickets.entities.Metadata;
 import com.teketys.templetickets.entities.SortItem;
 import com.teketys.templetickets.entities.drawerMenu.DrawerItemCategory;
+import com.teketys.templetickets.entities.filtr.FilterResponse;
 import com.teketys.templetickets.entities.filtr.Filters;
 import com.teketys.templetickets.entities.product.Product;
 import com.teketys.templetickets.entities.product.ProductListResponse;
@@ -58,6 +60,9 @@ import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.adapters.ProductsRecyclerAdapter;
 import com.teketys.templetickets.ux.adapters.SortSpinnerAdapter;
 import com.teketys.templetickets.ux.dialogs.FilterDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
+
 import timber.log.Timber;
 
 /**
@@ -67,6 +72,7 @@ import timber.log.Timber;
 public class CategoryFragment extends Fragment {
 
     private static final String TYPE = "type";
+    private static final String SEARCH_TYPE = "search_type";
     private static final String CATEGORY_NAME = "categoryName";
     private static final String CATEGORY_ID = "categoryId";
     private static final String SEARCH_QUERY = "search_query";
@@ -80,6 +86,8 @@ public class CategoryFragment extends Fragment {
 
     private long categoryId;
     private String categoryType;
+    private String searchType;
+    private boolean isCategorySearchEqual = false;
 
     /**
      * Search string. The value is set only if the fragment is launched in order to searching.
@@ -152,9 +160,11 @@ public class CategoryFragment extends Fragment {
      * @param searchQuery word for searching.
      * @return new fragment instance.
      */
-    public static CategoryFragment newInstance(String searchQuery) {
+    public static CategoryFragment newInstance(String searchQuery, CONST.SEARCHES searchType, long categoryId) {
         Bundle args = new Bundle();
         args.putString(SEARCH_QUERY, searchQuery);
+        args.putString(SEARCH_TYPE, searchType.name());
+        args.putLong(CATEGORY_ID, categoryId);
 
         CategoryFragment fragment = new CategoryFragment();
         fragment.setArguments(args);
@@ -175,12 +185,13 @@ public class CategoryFragment extends Fragment {
         if (startBundle != null) {
             categoryId = startBundle.getLong(CATEGORY_ID, 0);
             String categoryName = startBundle.getString(CATEGORY_NAME, "");
+            searchType = startBundle.getString(SEARCH_TYPE, "");
             categoryType = startBundle.getString(TYPE, "category");
             searchQuery = startBundle.getString(SEARCH_QUERY, null);
             boolean isSearch = false;
             if (searchQuery != null && !searchQuery.isEmpty()) {
                 isSearch = true;
-                categoryId = -10;
+                //categoryId = -10;
                 categoryName = searchQuery;
             }
 
@@ -287,16 +298,18 @@ public class CategoryFragment extends Fragment {
                 Timber.e("Load more");
 
                 //Get the next set of products - with pagination TODO: check this...
-                SettingsMy.setActualPage(SettingsMy.getActualPage() + 0);
-                String url = String.format(EndPoints.PRODUCTS, categoryId, SettingsMy.getActualPage());
-                getProducts(url);
 
-                //if (productsMetadata != null && productsMetadata.getLinks() != null && productsMetadata.getLinks().getNext() != null) {
-                    //getProducts(productsMetadata.getLinks().getNext());
+                //Get the total page count from memory and decrement it => next and prev link
 
-                //} else {
-                //    Timber.d("CustomLoadMoreDataFromApi NO MORE DATA");
-                //}
+                if(SettingsMy.getActualPage() < SettingsMy.getTotalPageCount()) {
+                    SettingsMy.setActualPage(SettingsMy.getActualPage() + 1);
+                    String url = String.format(EndPoints.PRODUCTS, categoryId, SettingsMy.getActualPage());
+                    getProducts(url);
+                }
+                else {
+                    Timber.d("NO MORE DATA....");
+                    MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_NO_MORE_PRODUCTS_AVAILABLE, getString(R.string.No_more_products_found), MsgUtils.ToastLength.SHORT);
+                }
             }
         };
         productsRecycler.addOnScrollListener(endlessRecyclerScrollListener);
@@ -415,36 +428,60 @@ public class CategoryFragment extends Fragment {
             if (endlessRecyclerScrollListener != null) endlessRecyclerScrollListener.clean();
             productsRecyclerAdapter.clear();
 
-            //Reset the page count to 0 on URL <NULL>
-            SettingsMy.setActualPage(0);
-
             //url = String.format(EndPoints.PRODUCTS, SettingsMy.getActualNonNullShop(getActivity()).getId());
-            url = String.format(EndPoints.PRODUCTS, categoryId, SettingsMy.getActualPage() + 1);
+            Integer initalPagination = (SettingsMy.getTotalPageCount() == 0 ? 1 : SettingsMy.getTotalPageCount());
 
             // Build request url
-            /*if (searchQuery != null) {
-                String newSearchQueryString;
-                try {
-                    newSearchQueryString = URLEncoder.encode(searchQuery, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    Timber.e(e, "Unsupported encoding exception");
-                    newSearchQueryString = URLEncoder.encode(searchQuery);
+            if (searchQuery == null) {
+                if (initalPagination == 0) {
+                    url = String.format(EndPoints.PRODUCTS, categoryId, 1);
+                } else {
+                    url = String.format(EndPoints.PRODUCTS, categoryId, SettingsMy.getActualPage());
                 }
-                Timber.d("GetFirstProductsInCategory isSearch: %s", searchQuery);
-                url += "?search=" + newSearchQueryString;
-            } else {
-                url += "?" + categoryType + "=" + categoryId;
-            }*/
+            }
+            else if (searchQuery != null) {
+                String newSearchQueryString;
 
-            // Add filters parameter if exist
-            if (filterParameters != null && !filterParameters.isEmpty()) {
-                url += filterParameters;
+                if(searchType.toLowerCase().equals(CONST.SEARCHES.TEMPLE.name().toLowerCase())) {
+                    if (initalPagination == 0) {
+                        url = String.format(EndPoints.PRODUCTS, categoryId, 1);
+                    } else {
+                        url = String.format(EndPoints.PRODUCTS, categoryId, SettingsMy.getActualPage());
+                    }
+                }
+                else if(searchType.toLowerCase().equals(CONST.SEARCHES.PUJA.name().toLowerCase())) {
+                    try {
+                        newSearchQueryString = URLEncoder.encode(searchQuery, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        Timber.e(e, "Unsupported encoding exception");
+                        newSearchQueryString = URLEncoder.encode(searchQuery);
+                    }
+                    Timber.d("GetFirstProductsInCategory isSearch: %s", searchQuery);
+
+                    if (initalPagination == 0) {
+                        url = String.format(EndPoints.PRODUCTS_SEARCH, newSearchQueryString, 1);
+                    } else {
+                        url = String.format(EndPoints.PRODUCTS_SEARCH, newSearchQueryString, SettingsMy.getActualPage());
+                    }
+
+                    //url += "?search=" + newSearchQueryString;
+
+                    // Add filters parameter if exist
+                    //if (filterParameters != null && !filterParameters.isEmpty()) {
+                    //    url += filterParameters;
+                    //}
+
+                    //SortItem sortItem = (SortItem) sortSpinner.getSelectedItem();
+                    //if (sortItem != null) {
+                    //    url = url + "&sort=" + sortItem.getValue();
+                    //}
+                }
+
             }
 
-            //SortItem sortItem = (SortItem) sortSpinner.getSelectedItem();
-            //if (sortItem != null) {
-            //    url = url + "&sort=" + sortItem.getValue();
-            //}
+            if(filterParameters != null && !filterParameters.isEmpty()) {
+
+            }
         }
 
         GsonRequest<ProductListResponse> getProductsRequest = new GsonRequest<>(Request.Method.GET, url, null, ProductListResponse.class,
@@ -453,17 +490,45 @@ public class CategoryFragment extends Fragment {
                     public void onResponse(@NonNull ProductListResponse response) {
                         firstTimeSort = false;
 //                        Timber.d("response:" + response.toString());
-                        if(response.getProducts() != null) {
-                            productsRecyclerAdapter.addProducts(response.getProducts());
-                            //productsMetadata = response.getMetadata();
-                            //if (filters == null) filters = productsMetadata.getFilters();
-                            checkEmptyContent();
-                            loadMoreProgress.setVisibility(View.GONE);
-                        }
-                        else {
-                            Timber.d("response: %s", "No matching products.");
+                        if(response != null) {
+                            if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                                LoginDialogFragment.logoutUser(true);
+                                DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                if (loadMoreProgress != null)
+                                    loadMoreProgress.setVisibility(View.GONE);
+                            }
+                            else {
+                                if (response.getProducts() != null) {
+                                    productsRecyclerAdapter.addProducts(response.getProducts());
+                                    //productsMetadata = response.getMetadata();
 
+                                    if (filters == null) {
+                                        prepareFilters();
+
+                                    }
+                                    checkEmptyContent();
+                                    loadMoreProgress.setVisibility(View.GONE);
+
+                                    //Reset the page count to 0 on URL <NULL>
+                                    //SettingsMy.setActualPage(1);
+                                    Integer pagination = (SettingsMy.getTotalPageCount() == 0 ? 1 : (int) (Math.ceil(response.getProducts().size() / 4.0)));
+                                    SettingsMy.setTotalPageCount(pagination);
+
+                                    if (SettingsMy.getActualPage() < pagination)
+                                        SettingsMy.setActualPage(SettingsMy.getActualPage() + 1);
+                                    else
+                                        SettingsMy.setActualPage(pagination);
+                                } else {
+                                    Timber.d("response: %s", "No matching products.");
+                                    MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_NO_PRODUCTS_AVAILABLE, getString(R.string.Products_not_found), MsgUtils.ToastLength.LONG);
+                                    if (loadMoreProgress != null)
+                                        loadMoreProgress.setVisibility(View.GONE);
+                                }
+                            }
                         }
+                        else
+                            Timber.d("Null response during getProducts....");
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -476,6 +541,39 @@ public class CategoryFragment extends Fragment {
         getProductsRequest.setRetryPolicy(MyApplication.getDefaultRetryPolice());
         getProductsRequest.setShouldCache(false);
         MyApplication.getInstance().addToRequestQueue(getProductsRequest, CONST.CATEGORY_REQUESTS_TAG);
+    }
+
+    private void prepareFilters() {
+        //filters = productsMetadata.getFilters();
+        String url = String.format(EndPoints.NAVIGATION_SINGLE, categoryId);
+        /*GsonRequest<FilterResponse> getFilterRequest = new GsonRequest<>(Request.Method.GET, url, null, FilterResponse.class,
+                new Response.Listener<FilterResponse>() {
+                    @Override
+                    public void onResponse(@NonNull FilterResponse response) {
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                }
+                            }
+                            else
+                                filters = response.getFilters();
+                        }
+                        else
+                            Timber.d("Null response during prepareFilters....");
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                MsgUtils.logAndShowErrorMessage(getActivity(), error);
+            }
+        });
+        getFilterRequest.setRetryPolicy(MyApplication.getDefaultRetryPolice());
+        getFilterRequest.setShouldCache(false);
+        MyApplication.getInstance().addToRequestQueue(getFilterRequest, CONST.FILTER_REQUESTS_TAG);*/
+
     }
 
     private void checkEmptyContent() {

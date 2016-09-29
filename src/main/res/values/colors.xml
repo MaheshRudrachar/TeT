@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- slider -->
+    <color name="holo_blue_dark">#ee2b12</color>
+    <color name="view_divider_color">#BABABA</color>
+    <color name="view_divider_color_2">#DADADA</color>
+
     <color name="colorPrimaryLight">#b4b4b4</color>
     <!-- Toolbar -->
     <color name="colorPrimary">#039BE5</color>

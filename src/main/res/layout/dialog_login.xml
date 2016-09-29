@@ -163,6 +163,266 @@
                 android:src="@drawable/close"/>
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="290dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_edit_first_name_wrapper"
+                android:layout_width="290dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="0.50"
+                android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_first_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/FirstName_colon"
+                    android:inputType="textPersonName"
+                    android:nextFocusForward="@+id/account_edit_last_name"
+                    android:singleLine="true"
+                    android:paddingEnd="@dimen/base_margin_horizontal_half"
+                    android:paddingLeft="@dimen/base_margin_horizontal"
+                    android:paddingRight="@dimen/base_margin_horizontal_half"
+                    android:paddingStart="@dimen/base_margin_horizontal"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_edit_last_name_wrapper"
+                android:layout_width="290dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="0.50"
+                android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_last_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/LastName_colon"
+                    android:inputType="textPersonName"
+                    android:nextFocusForward="@+id/account_edit_address_et"
+                    android:singleLine="true"
+                    android:paddingEnd="@dimen/base_margin_horizontal_half"
+                    android:paddingLeft="@dimen/base_margin_horizontal"
+                    android:paddingRight="@dimen/base_margin_horizontal_half"
+                    android:paddingStart="@dimen/base_margin_horizontal"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+            </android.support.design.widget.TextInputLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="290dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+                <android.support.design.widget.TextInputLayout
+                    android:id="@+id/account_edit_address_wrapper"
+                    android:layout_width="290dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_weight="0.50"
+                    android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_address_et"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/Address_colon"
+                    android:inputType="textPostalAddress"
+                    android:nextFocusDown="@+id/account_edit_house_number_et"
+                    android:nextFocusForward="@+id/account_edit_house_number_et"
+                    android:nextFocusRight="@+id/account_edit_house_number_et"
+                    android:singleLine="true"
+                    android:paddingEnd="@dimen/base_margin_horizontal_half"
+                    android:paddingLeft="@dimen/base_margin_horizontal"
+                    android:paddingRight="@dimen/base_margin_horizontal_half"
+                    android:paddingStart="@dimen/base_margin_horizontal"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+                </android.support.design.widget.TextInputLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="290dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_edit_city_wrapper"
+                android:layout_width="290dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="0.50"
+                android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_city_et"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/City_colon"
+                    android:inputType="textPostalAddress"
+                    android:nextFocusDown="@+id/account_edit_zip_et"
+                    android:nextFocusForward="@+id/account_edit_zip_et"
+                    android:nextFocusLeft="@+id/account_edit_house_number_et"
+                    android:nextFocusRight="@+id/account_edit_zip_et"
+                    android:singleLine="true"
+                    android:paddingEnd="@dimen/base_margin_horizontal_half"
+                    android:paddingLeft="@dimen/base_margin_horizontal"
+                    android:paddingRight="@dimen/base_margin_horizontal_half"
+                    android:paddingStart="@dimen/base_margin_horizontal"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_edit_zip_wrapper"
+                android:layout_width="290dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="0.50"
+                android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_zip_et"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/ZIP_colon"
+                    android:inputType="number"
+                    android:nextFocusDown="@+id/account_edit_phone_et"
+                    android:nextFocusForward="@+id/account_edit_phone_et"
+                    android:nextFocusLeft="@+id/account_edit_city_et"
+                    android:nextFocusRight="@+id/account_edit_phone_et"
+                    android:singleLine="true"
+                    android:paddingEnd="@dimen/base_margin_horizontal_half"
+                    android:paddingLeft="@dimen/base_margin_horizontal"
+                    android:paddingRight="@dimen/base_margin_horizontal_half"
+                    android:paddingStart="@dimen/base_margin_horizontal"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+            </android.support.design.widget.TextInputLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="290dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_edit_phone_wrapper"
+                android:layout_width="290dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="0.50"
+                android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_phone_et"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/Phone_colon"
+                    android:inputType="number"
+                    android:nextFocusDown="@+id/account_edit_country_et"
+                    android:nextFocusForward="@+id/account_edit_country_et"
+                    android:nextFocusLeft="@+id/account_edit_city_et"
+                    android:nextFocusRight="@+id/account_edit_country_et"
+                    android:singleLine="true"
+                    android:paddingEnd="@dimen/base_margin_horizontal_half"
+                    android:paddingLeft="@dimen/base_margin_horizontal"
+                    android:paddingRight="@dimen/base_margin_horizontal_half"
+                    android:paddingStart="@dimen/base_margin_horizontal"
+                    android:maxLines="1"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+            </android.support.design.widget.TextInputLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="290dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_edit_country_wrapper"
+                android:layout_width="290dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="0.50"
+                android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_country_et"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/Country_colon"
+                    android:inputType="textNoSuggestions"
+                    android:nextFocusDown="@+id/account_edit_state_et"
+                    android:nextFocusForward="@+id/account_edit_state_et"
+                    android:nextFocusLeft="@+id/account_edit_phone_et"
+                    android:nextFocusRight="@+id/account_edit_state_et"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:paddingEnd="@dimen/base_margin_horizontal_half"
+                    android:paddingLeft="@dimen/base_margin_horizontal"
+                    android:paddingRight="@dimen/base_margin_horizontal_half"
+                    android:paddingStart="@dimen/base_margin_horizontal"
+                    android:text="India"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/account_edit_state_wrapper"
+                android:layout_width="290dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="0.50"
+                android:textColorHint="@color/colorPrimaryLight">
+
+                <EditText
+                    android:id="@+id/account_edit_state_et"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/Region_colon"
+                    android:inputType="textNoSuggestions"
+                    android:nextFocusDown="@+id/login_registration_email_text_auto"
+                    android:nextFocusForward="@+id/login_registration_email_text_auto"
+                    android:nextFocusLeft="@+id/account_edit_country_et"
+                    android:nextFocusRight="@+id/login_registration_email_text_auto"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:text="Karnataka"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-light"/>
+            </android.support.design.widget.TextInputLayout>
+        </LinearLayout>
+
         <android.support.design.widget.TextInputLayout
             android:id="@+id/login_registration_email_wrapper"
             android:layout_width="290dp"
@@ -174,7 +434,7 @@
                 android:id="@+id/login_registration_email_text_auto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/Email"
+                android:hint="@string/Email_colon"
                 android:imeOptions="actionNext"
                 android:inputType="textEmailAddress"
                 android:maxLines="1"
@@ -185,6 +445,7 @@
                 android:paddingLeft="@dimen/base_margin_horizontal"
                 android:paddingRight="@dimen/base_margin_horizontal_half"
                 android:paddingStart="@dimen/base_margin_horizontal"
+                android:textStyle="bold"
                 android:singleLine="true"/>
         </android.support.design.widget.TextInputLayout>
 
@@ -197,17 +458,19 @@
             android:textColorHint="@color/colorPrimaryLight">
 
             <EditText
+                android:id="@+id/login_registration_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:drawableEnd="@android:drawable/ic_menu_view"
                 android:drawableRight="@android:drawable/ic_menu_view"
-                android:hint="@string/Password"
+                android:hint="@string/Password_colon"
                 android:inputType="textPassword"
                 android:maxLines="1"
                 android:paddingEnd="@dimen/base_margin_horizontal_half"
                 android:paddingLeft="@dimen/base_margin_horizontal"
                 android:paddingRight="@dimen/base_margin_horizontal_half"
                 android:paddingStart="@dimen/base_margin_horizontal"
+                android:textStyle="bold"
                 android:singleLine="true"/>
         </android.support.design.widget.TextInputLayout>
 
@@ -231,6 +494,9 @@
                 android:layout_marginEnd="24dp"
                 android:layout_marginRight="24dp"
                 android:fontFamily="sans-serif-light"
+                android:nextFocusDown="@+id/login_registration_confirm"
+                android:nextFocusForward="@+id/login_registration_confirm"
+                android:nextFocusRight="@+id/login_registration_confirm"
                 android:paddingBottom="15dp"
                 android:paddingTop="15dp"
                 android:text="@string/Male"
@@ -243,6 +509,9 @@
                 android:layout_height="wrap_content"
                 android:checked="true"
                 android:fontFamily="sans-serif-light"
+                android:nextFocusDown="@+id/login_registration_confirm"
+                android:nextFocusForward="@+id/login_registration_confirm"
+                android:nextFocusRight="@+id/login_registration_confirm"
                 android:paddingBottom="15dp"
                 android:paddingTop="15dp"
                 android:text="@string/Female"

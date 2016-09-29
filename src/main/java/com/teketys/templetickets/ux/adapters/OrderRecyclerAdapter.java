@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
+import com.teketys.templetickets.CONST;
 import com.teketys.templetickets.R;
 import com.teketys.templetickets.entities.order.CustomerOrder;
 import com.teketys.templetickets.entities.order.CustomerOrderDetails;
@@ -77,22 +78,34 @@ public class OrderRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.View
             viewHolderHeader.orderId.setText(String.valueOf(order.getOrder_id()));
             viewHolderHeader.orderName.setText(order.getPayment_firstname() +" " + order.getPayment_lastname());
             viewHolderHeader.orderDateCreated.setText(order.getDate_modified());
-            viewHolderHeader.orderTotal.setText(order.getTotal());
-            viewHolderHeader.orderPaymentMethod.setText(order.getPayment_method());
+            viewHolderHeader.orderTotal.setText(String.format("%.2f", Double.parseDouble(order.getTotal())));
 
-            StringBuffer productName = null;
+            String paymentMethod = order.getPayment_method().replace("<\\/br><img src= \"http:\\/\\/www.ccavenue.com\\/images\\/460.gif\" \\/>", "");
+
+            if(paymentMethod.toLowerCase().trim().contains("cash on delivery")) {
+                paymentMethod = "Please pay cash during your visit to Temple!";
+            }
+
+            viewHolderHeader.orderPaymentMethod.setText(paymentMethod);
+            //viewHolderHeader.orderTempleName.setVisibility(View.INVISIBLE);
+
+            StringBuffer productName = new StringBuffer();
             if(order.getProducts() != null) {
                 for (CustomerOrderProduct cop : order.getProducts()) {
-                    productName.append(cop.getName() + "/");
+                    //viewHolderHeader.orderTempleName.setText(cop.getModel());
+                    //productName.append(CONST.TEMPLE_NAME_TAG + cop.getModel() + "\n");
+                    productName.append(cop.getName() + "\n");
                     for (CustomerOrderVariation cov : cop.getOptions()) {
-                        productName.append(cov.getName() + "/" + cov.getValue());
+                        if (cov.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
+                            productName.append("Time: "  + cov.getValue() + "\n");
+                        } else if (cov.getName().toLowerCase().equals(CONST.OPTION_NAME_DATE)) {
+                            productName.append("Date: " + cov.getValue() + "\n");
+                        }
                     }
-                    productName.append(",");
                 }
             }
 
             viewHolderHeader.orderProductName.setText((productName) != null ? productName.toString().trim() :"");
-            //viewHolderHeader.orderProductVariation.setText();
 
             viewHolderHeader.orderStatus.setText((order.getHistories()) != null ? order.getHistories().get(0).getStatus() : "pending");
 
@@ -156,6 +169,7 @@ public class OrderRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.View
         public TextView orderTotal;
         public TextView orderPaymentPrice;
         public TextView orderPaymentMethod;
+        public TextView orderTempleName;
         public TextView orderProductName;
         public TextView orderProductVariation;
         public TextView orderStatus;

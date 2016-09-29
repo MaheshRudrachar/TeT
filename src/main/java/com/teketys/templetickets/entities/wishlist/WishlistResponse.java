@@ -11,29 +11,36 @@ import java.util.List;
 
 public class WishlistResponse {
 
-    @SerializedName("products")
-    private List<WishlistItem> products;
-
-    public WishlistResponse() {
+    public WishlistRecord getWishlistRecords() {
+        return wishlistRecords;
     }
 
-    public WishlistResponse(List<WishlistItem> products) {
+    private String statusCode;
 
-        this.products = products;
+    public String getStatusCode() {
+        return statusCode;
     }
 
-    public List<WishlistItem> getProducts() {
-        return products;
+    public void setStatusCode(String statusCode) {
+        this.statusCode = statusCode;
     }
 
-    public void setProducts(List<WishlistItem> products) {
-        this.products = products;
+    public String getStatusText() {
+        return statusText;
     }
 
-    @Override
-    public String toString() {
-        return "WishlistResponse{" +
-                ", products=" + products +
-                '}';
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
     }
+
+    private String statusText;
+
+    public void setWishlistRecords(WishlistRecord wishlistRecords) {
+        this.wishlistRecords = wishlistRecords;
+    }
+
+    @SerializedName("data")
+    private WishlistRecord wishlistRecords;
+
+
 }

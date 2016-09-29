@@ -97,15 +97,20 @@ public class MyRegistrationIntentService extends IntentService {
             @Override
             public void onErrorResponse(VolleyError error) {
                 try {
-                    JSONObject errorData = new JSONObject(new String(error.networkResponse.data));
-                    JSONArray body = errorData.getJSONArray("body");
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < body.length(); i++) {
-                        sb.append(body.get(i));
-                        sb.append("\n");
+                    if(error != null) {
+                        JSONObject errorData = new JSONObject(new String(error.networkResponse.data));
+                        JSONArray body = errorData.getJSONArray("body");
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < body.length(); i++) {
+                            sb.append(body.get(i));
+                            sb.append("\n");
+                        }
+                        String result = sb.toString();
+                        Timber.e("Error message: %s", result);
                     }
-                    String result = sb.toString();
-                    Timber.e("Error message: %s", result);
+                    else
+                        Timber.d("Null response during sendRegistrationToServer error response....");
+
                 } catch (Exception e) {
                     Timber.e(e, "GCM error response parsing failed");
                 }
@@ -114,18 +119,6 @@ public class MyRegistrationIntentService extends IntentService {
 
         JSONObject requestPost = new JSONObject();
         try {
-
-            JSONObject accountJO = new JSONObject();
-            JSONObject customJO = new JSONObject();
-
-            JSONObject deviceRegJO = new JSONObject();
-
-            deviceRegJO.put("platform", "android");
-            deviceRegJO.put("device_token", token);
-
-            accountJO.put("account", deviceRegJO);
-            customJO.put("custom_field", accountJO);
-
 
             Shop shop = SettingsMy.getActualShop();
             if (shop != null) {
@@ -138,10 +131,16 @@ public class MyRegistrationIntentService extends IntentService {
                     requestPost.put(JsonUtils.TAG_FIRST_NAME, activeUser.getFirstname());
                     requestPost.put(JsonUtils.TAG_LAST_NAME, activeUser.getLastname());
                     requestPost.put(JsonUtils.TAG_TELEPHONE, activeUser.getTelephone());
+                    requestPost.put(JsonUtils.TAG_FAX, "");
 
-                    requestPost.put("custom_field", accountJO);
+                    JSONObject customJO = new JSONObject();
+                    customJO.put(JsonUtils.TAG_GENDER, (SettingsMy.getActiveUser().getUserCustomField().getGender()) != null ? SettingsMy.getActiveUser().getUserCustomField().getGender() : "");
+                    customJO.put(JsonUtils.TAG_PLATFORM, "android");
+                    customJO.put(JsonUtils.TAG_DEVICE_TOKEN, token);
+                    requestPost.put(JsonUtils.TAG_CUSTOM_FIELD, customJO);
 
                     Timber.d("GCM registration send: authorized");
+                    //Check this TODO: Mahesh
                     req = new JsonRequest(Request.Method.POST, url, requestPost, future, errorListener, null, "");
                 } else {
                     Timber.d("GCM registration: non-authorized. You have to Login!");

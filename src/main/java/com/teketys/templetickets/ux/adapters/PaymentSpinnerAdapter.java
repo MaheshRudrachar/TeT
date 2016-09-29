@@ -105,8 +105,8 @@ public class PaymentSpinnerAdapter extends ArrayAdapter<Payment> {
         } else
             holder.description.setVisibility(View.INVISIBLE);
         if (payment.getPrice() == 0) {
-            holder.price.setText(R.string.free);
-            holder.price.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
+            //holder.price.setText(R.string.free);
+            //holder.price.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
         } else {
             holder.price.setText(context.getResources().getString(R.string.format_plus, payment.getPriceFormatted()));
             holder.price.setTextColor(ContextCompat.getColor(context, R.color.textPrimary));

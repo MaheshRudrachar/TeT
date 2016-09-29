@@ -79,7 +79,7 @@ public class PaymentDialogFragment extends DialogFragment {
             }
         });
 
-        if (selectedShipping != null) {
+        //if (selectedShipping != null) {
             final PaymentSpinnerAdapter paymentSpinnerAdapter = new PaymentSpinnerAdapter(getActivity(), selectedShipping.getPayment());
             paymentSpinnerAdapter.preselectPayment(selectedPaymentType);
             paymentList.setAdapter(paymentSpinnerAdapter);
@@ -93,7 +93,7 @@ public class PaymentDialogFragment extends DialogFragment {
                     dismiss();
                 }
             });
-        }
+        //}
         return view;
     }
 }

@@ -9,6 +9,7 @@ import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -41,6 +42,7 @@ import com.teketys.templetickets.utils.RecyclerMarginDecorator;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.adapters.OrdersHistoryRecyclerAdapter;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
 import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 
 import org.json.JSONObject;
@@ -90,6 +92,13 @@ public class OrdersHistoryFragment extends Fragment {
         return view;
     }
 
+    public static OrdersHistoryFragment newInstance(String url) {
+        Bundle args = new Bundle();
+        OrdersHistoryFragment fragment = new OrdersHistoryFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     /**
      * Prepare content recycler. Create custom adapter and endless scroll.
      *
@@ -129,7 +138,7 @@ public class OrdersHistoryFragment extends Fragment {
      *
      * @param url null for fresh load. Otherwise use URLs from response metadata.
      */
-    private void loadOrders(String url) {
+    public void loadOrders(String url) {
         User user = SettingsMy.getActiveUser();
         if (user != null) {
             progressDialog.show();
@@ -138,63 +147,49 @@ public class OrdersHistoryFragment extends Fragment {
                 url = String.format(EndPoints.ORDERS);
             }
 
-            /*JsonRequest req = new JsonRequest(Request.Method.GET, url,
-                    null, new Response.Listener<JSONObject>() {
-                @Override
-                public void onResponse(JSONObject response) {
-                    if (response != null) {
-                        Timber.d("response %s", response.toString());
-
-                        ordersHistoryRecyclerAdapter.addOrders(response..getCustomerOrders());
-
-                        if (ordersHistoryRecyclerAdapter.getItemCount() > 0) {
-                            empty.setVisibility(View.GONE);
-                            content.setVisibility(View.VISIBLE);
-                        } else {
-                            empty.setVisibility(View.VISIBLE);
-                            content.setVisibility(View.GONE);
-                        }
-                        if (progressDialog != null) progressDialog.cancel();
-                    }
-                    else {
-                        Timber.d("No orders exists....");
-                        if (progressDialog != null) progressDialog.cancel();
-                    }
-                }
-            }, new Response.ErrorListener() {
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    if (progressDialog != null) progressDialog.cancel();
-                    MsgUtils.logAndShowErrorMessage(getActivity(), error);
-                }
-            });
-            req.setRetryPolicy(MyApplication.getDefaultRetryPolice());
-            req.setShouldCache(false);
-            MyApplication.getInstance().addToRequestQueue(req, CONST.ORDERS_HISTORY_REQUESTS_TAG);*/
-
-
            GsonRequest<CustomerOrderRespose> userOrderRequest = new GsonRequest<>(Request.Method.GET, url, null, CustomerOrderRespose.class,
                     new Response.Listener<CustomerOrderRespose>() {
                         @Override
                         public void onResponse(@NonNull CustomerOrderRespose response) {
-                            if (response.getCustomerRecord().getCustomerOrders() != null && response.getCustomerRecord().getCustomerOrders().size() > 0) {
-                                Timber.d("response %s", response.getCustomerRecord().getCustomerOrders().get(0).toString());
-
-                                ordersHistoryRecyclerAdapter.addOrders(response.getCustomerRecord().getCustomerOrders());
-
-                                if (ordersHistoryRecyclerAdapter.getItemCount() > 0) {
-                                    empty.setVisibility(View.GONE);
-                                    content.setVisibility(View.VISIBLE);
-                                } else {
-                                    empty.setVisibility(View.VISIBLE);
-                                    content.setVisibility(View.GONE);
+                            if(response != null) {
+                                if(response.getStatusText() != null && response.getStatusCode() != null) {
+                                    if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                        LoginDialogFragment.logoutUser(true);
+                                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                        if (progressDialog != null) progressDialog.cancel();
+                                    }
                                 }
-                                if (progressDialog != null) progressDialog.cancel();
+                                else {
+                                    if(response.getCustomerRecord() != null) {
+                                        if (response.getCustomerRecord().getCustomerOrders() != null && response.getCustomerRecord().getCustomerOrders().size() > 0) {
+                                            Timber.d("response %s", response.getCustomerRecord().getCustomerOrders().get(0).toString());
+
+                                            ordersHistoryRecyclerAdapter.addOrders(response.getCustomerRecord().getCustomerOrders());
+
+                                            if (ordersHistoryRecyclerAdapter.getItemCount() > 0) {
+                                                empty.setVisibility(View.GONE);
+                                                content.setVisibility(View.VISIBLE);
+                                            } else {
+                                                empty.setVisibility(View.VISIBLE);
+                                                content.setVisibility(View.GONE);
+                                            }
+                                            if (progressDialog != null) progressDialog.cancel();
+                                        } else {
+                                            Timber.d("No orders exists....");
+                                            MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, getString(R.string.No_orders_found), MsgUtils.ToastLength.SHORT);
+                                            if (progressDialog != null) progressDialog.cancel();
+                                        }
+                                    }
+                                    else {
+                                        Timber.d("No orders exists....");
+                                        MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, getString(R.string.No_orders_found), MsgUtils.ToastLength.SHORT);
+                                        if (progressDialog != null) progressDialog.cancel();
+                                    }
+                                }
                             }
-                            else {
-                                Timber.d("No orders exists....");
-                                if (progressDialog != null) progressDialog.cancel();
-                            }
+                            else
+                                Timber.d("Null response during loadOrders....");
                         }
                     }, new Response.ErrorListener() {
                 @Override

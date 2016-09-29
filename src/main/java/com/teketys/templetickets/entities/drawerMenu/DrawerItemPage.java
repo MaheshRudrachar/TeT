@@ -7,11 +7,11 @@ package com.teketys.templetickets.entities.drawerMenu;
 public class DrawerItemPage {
 
     private long id;
-    private String name;
+    private String title;
 
-    public DrawerItemPage(long id, String name) {
+    public DrawerItemPage(long id, String title) {
         this.id = id;
-        this.name = name;
+        this.title = title;
     }
 
     public DrawerItemPage() {
@@ -27,11 +27,11 @@ public class DrawerItemPage {
     }
 
     public String getName() {
-        return name;
+        return title;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setName(String title) {
+        this.title = title;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class DrawerItemPage {
     public String toString() {
         return "DrawerItemPage{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", title='" + title + '\'' +
                 '}';
     }
 }

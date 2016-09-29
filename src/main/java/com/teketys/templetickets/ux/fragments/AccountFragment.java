@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,8 +28,8 @@ import com.teketys.templetickets.SettingsMy;
 import com.teketys.templetickets.api.EndPoints;
 import com.teketys.templetickets.api.GsonRequest;
 import com.teketys.templetickets.entities.User;
+import com.teketys.templetickets.entities.UserResponse;
 import com.teketys.templetickets.entities.delivery.Shipping;
-import com.teketys.templetickets.entities.wishlist.UserResponse;
 import com.teketys.templetickets.interfaces.LoginDialogInterface;
 import com.teketys.templetickets.interfaces.ShippingDialogInterface;
 import com.teketys.templetickets.listeners.OnSingleClickListener;
@@ -36,6 +37,7 @@ import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 import com.teketys.templetickets.ux.dialogs.ShippingDialogFragment;
 import timber.log.Timber;
 
@@ -124,7 +126,7 @@ public class AccountFragment extends Fragment {
             @Override
             public void onSingleClick(View v) {
                 if (SettingsMy.getActiveUser() != null) {
-                    LoginDialogFragment.logoutUser();
+                    LoginDialogFragment.logoutUser(false);
                     refreshScreen(null);
                 } else {
                     LoginDialogFragment loginDialogFragment = LoginDialogFragment.newInstance(new LoginDialogInterface() {
@@ -165,11 +167,27 @@ public class AccountFragment extends Fragment {
                 new Response.Listener<UserResponse>() {
                     @Override
                     public void onResponse(@NonNull UserResponse response) {
-                        if(response.getUser() != null) {
-                            Timber.d("response: %s", response.getUser().toString());
-                            SettingsMy.setActiveUser(response.getUser());
-                            refreshScreen(SettingsMy.getActiveUser());
+                        if(response != null) {
+                            if (response.getUser() != null) {
+                                if(response.getStatusText() != null && response.getStatusCode() != null) {
+                                    if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                        LoginDialogFragment.logoutUser(true);
+                                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                        if (pDialog != null) pDialog.cancel();
+                                    }
+                                }
+                                else {
+                                    Timber.d("response: %s", response.getUser().toString());
+                                    SettingsMy.setActiveUser(response.getUser());
+                                    refreshScreen(SettingsMy.getActiveUser());
+                                }
+                            } else
+                                MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, "Unknown User!", MsgUtils.ToastLength.SHORT);
                         }
+                        else
+                            Timber.d("Null response during syncUserData....");
+
                         if (pDialog != null) pDialog.cancel();
                     }
                 }, new Response.ErrorListener() {
@@ -196,12 +214,13 @@ public class AccountFragment extends Fragment {
             updateUserBtn.setVisibility(View.VISIBLE);
             myOrdersBtn.setVisibility(View.VISIBLE);
 
-            tvUserName.setText(user.getFirstname());
+            tvUserName.setText(user.getFirstname() + " " + user.getLastname());
 
-            String address = user.getAddress();
-            address = appendCommaText(address, user.getAddress(), false);
-            address = appendCommaText(address, user.getCity(), true);
-            address = appendCommaText(address, user.getPostalcode(), true);
+            String address = (user.getAddress() != null) ? user.getAddress().getAddress_1() : "";
+            //String address = user.getAddress();
+            //address = appendCommaText(address, user.getAddress(), false);
+            //address = appendCommaText(address, user.getCity(), true);
+            //address = appendCommaText(address, user.getPostalcode(), true);
 
             tvAddress.setText(address);
             tvEmail.setText(user.getEmail());

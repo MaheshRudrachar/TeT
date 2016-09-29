@@ -42,6 +42,7 @@ public class FilterRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
     private static final int TYPE_ITEM_COLOR = 0;
     private static final int TYPE_ITEM_SELECT = 1;
     private static final int TYPE_ITEM_RANGE = 2;
+    private static final int TYPE_ITEM_PUJA = 3;
 
     private final List<FilterType> filterTypeList = new ArrayList<>();
 
@@ -58,7 +59,7 @@ public class FilterRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         this.context = context;
 
         // Add default values
-        for (FilterType filterType : filterData.getFilters()) {
+        /*for (FilterType filterType : filterData.getFilters()) {
             if (DeserializerFilters.FILTER_TYPE_COLOR.equals(filterType.getType())) {
                 ((FilterTypeColor) filterType).getValues().add(0, new FilterValueColor(DEFAULT_ID, context.getString(R.string.All)));
             } else if (DeserializerFilters.FILTER_TYPE_SELECT.equals(filterType.getType())) {
@@ -66,7 +67,7 @@ public class FilterRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             }
         }
 
-        filterTypeList.addAll(filterData.getFilters());
+        filterTypeList.addAll(filterData.getFilters());*/
 
         // TODO if count of filters is more than 4-5, then is needed to persist selected values.
         // The values are already saved, but views have to be restored properly.

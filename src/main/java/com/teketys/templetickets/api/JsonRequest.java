@@ -121,7 +121,7 @@ public class JsonRequest extends JsonObjectRequest {
 
             // If AccessToken expired. Logout user and redirect to home page.
             if (getStatusCode() == HttpURLConnection.HTTP_FORBIDDEN && fragmentManager != null) {
-                LoginDialogFragment.logoutUser();
+                LoginDialogFragment.logoutUser(false);
                 DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
                 loginExpiredDialogFragment.show(fragmentManager, LoginExpiredDialogFragment.class.getSimpleName());
             }

@@ -95,8 +95,8 @@ public class WishListRecyclerAdapter extends RecyclerView.Adapter<WishListRecycl
 
             Picasso.with(context).load(holder.wishlistItem.getThumb())
                     .fit().centerInside()
-                    .placeholder(R.drawable.placeholder_loading)
-                    .error(R.drawable.placeholder_error)
+                    .placeholder(R.drawable.placeholder_loading1)
+                    .error(R.drawable.placeholder_error1)
                     .into(holder.ivThumb);
 
             // Determine if product is on sale

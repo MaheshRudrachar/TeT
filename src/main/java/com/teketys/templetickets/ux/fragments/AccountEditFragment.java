@@ -9,6 +9,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,15 +33,16 @@ import com.teketys.templetickets.api.EndPoints;
 import com.teketys.templetickets.api.GsonRequest;
 import com.teketys.templetickets.api.JsonRequest;
 import com.teketys.templetickets.entities.User;
-import com.teketys.templetickets.entities.wishlist.UserResponse;
+import com.teketys.templetickets.entities.UserAddress;
+import com.teketys.templetickets.entities.UserResponse;
 import com.teketys.templetickets.listeners.OnSingleClickListener;
 import com.teketys.templetickets.utils.JsonUtils;
 import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
 import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 
-import okhttp3.internal.Util;
 import timber.log.Timber;
 
 /**
@@ -57,13 +59,15 @@ public class AccountEditFragment extends Fragment {
 
     // Account editing form
     private LinearLayout accountForm;
-    private TextInputLayout nameInputWrapper;
-    private TextInputLayout streetInputWrapper;
-    private TextInputLayout houseNumberInputWrapper;
+    private TextInputLayout fnameInputWrapper;
+    private TextInputLayout lnameInputWrapper;
+    private TextInputLayout addressInputWrapper;
     private TextInputLayout cityInputWrapper;
     private TextInputLayout zipInputWrapper;
     private TextInputLayout phoneInputWrapper;
     private TextInputLayout emailInputWrapper;
+    private TextInputLayout countryInputWrapper;
+    private TextInputLayout stateInputWrapper;
 
     // Password change form
     private LinearLayout passwordForm;
@@ -83,13 +87,15 @@ public class AccountEditFragment extends Fragment {
         // Account details form
         accountForm = (LinearLayout) view.findViewById(R.id.account_edit_form);
 
-        nameInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_name_wrapper);
-        streetInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_street_wrapper);
-        houseNumberInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_house_number_wrapper);
+        fnameInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_first_name_wrapper);
+        lnameInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_last_name_wrapper);
+        addressInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_address_wrapper);
         cityInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_city_wrapper);
         zipInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_zip_wrapper);
         phoneInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_phone_wrapper);
         emailInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_email_wrapper);
+        countryInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_country_wrapper);
+        stateInputWrapper = (TextInputLayout) view.findViewById(R.id.account_edit_state_wrapper);
 
         // Password form
         passwordForm = (LinearLayout) view.findViewById(R.id.account_edit_password_form);
@@ -131,7 +137,7 @@ public class AccountEditFragment extends Fragment {
                 if (!isPasswordForm) {
                     try {
                         User user = getUserFromView();
-                        putUser(user);
+                        putUserAccount(user);
                     } catch (Exception e) {
                         Timber.e(e, "Update user information exception.");
                         MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_INTERNAL_ERROR, null, MsgUtils.ToastLength.SHORT);
@@ -160,22 +166,44 @@ public class AccountEditFragment extends Fragment {
 
     private User getUserFromView() {
         User user = new User();
-        user.setFirstname(Utils.getTextFromInputLayout(nameInputWrapper));
-        user.setAddress(Utils.getTextFromInputLayout(houseNumberInputWrapper));
-        user.setCity(Utils.getTextFromInputLayout(cityInputWrapper));
-        user.setPostalcode(Utils.getTextFromInputLayout(zipInputWrapper));
+        user.setFirstname(Utils.getTextFromInputLayout(fnameInputWrapper));
+        user.setLastname(Utils.getTextFromInputLayout(lnameInputWrapper));
+        user.setEmail(Utils.getTextFromInputLayout(emailInputWrapper));
         user.setTelephone(Utils.getTextFromInputLayout(phoneInputWrapper));
+
+        UserAddress userAddress = new UserAddress();
+        userAddress.setAddress_1(Utils.getTextFromInputLayout(addressInputWrapper));
+        userAddress.setPostCode(Utils.getTextFromInputLayout(zipInputWrapper));
+        userAddress.setCity(Utils.getTextFromInputLayout(cityInputWrapper));
+        userAddress.setCountry(Utils.getTextFromInputLayout(countryInputWrapper));
+        userAddress.setZone(Utils.getTextFromInputLayout(stateInputWrapper));
+
+        user.setAddress(userAddress);
+
         return user;
     }
 
     private void refreshScreen(User user) {
-        Utils.setTextToInputLayout(nameInputWrapper, user.getFirstname());
-        Utils.setTextToInputLayout(streetInputWrapper, user.getAddress());
-        Utils.setTextToInputLayout(houseNumberInputWrapper, user.getAddress());
-        Utils.setTextToInputLayout(cityInputWrapper, user.getCity());
-        Utils.setTextToInputLayout(zipInputWrapper, user.getPostalcode());
+        Utils.setTextToInputLayout(fnameInputWrapper, user.getFirstname());
+        Utils.setTextToInputLayout(lnameInputWrapper, user.getLastname());
         Utils.setTextToInputLayout(emailInputWrapper, user.getEmail());
         Utils.setTextToInputLayout(phoneInputWrapper, user.getTelephone());
+
+        if (user.getAddress() != null) {
+            Utils.setTextToInputLayout(addressInputWrapper, user.getAddress().getAddress_1());
+            Utils.setTextToInputLayout(zipInputWrapper, user.getAddress().getPostCode());
+            Utils.setTextToInputLayout(cityInputWrapper, user.getAddress().getCity());
+            Utils.setTextToInputLayout(countryInputWrapper, user.getAddress().getCountry());
+            Utils.setTextToInputLayout(stateInputWrapper, user.getAddress().getZone());
+        }
+        else {
+            Utils.setTextToInputLayout(addressInputWrapper, "");
+            Utils.setTextToInputLayout(zipInputWrapper, "");
+            Utils.setTextToInputLayout(cityInputWrapper, "");
+            Utils.setTextToInputLayout(countryInputWrapper, "");
+            Utils.setTextToInputLayout(stateInputWrapper, "");
+        }
+
     }
 
     /**
@@ -187,15 +215,19 @@ public class AccountEditFragment extends Fragment {
     private boolean isRequiredFields() {
         // Check and show all missing values
         String fieldRequired = getString(R.string.Required_field);
-        boolean nameCheck = Utils.checkTextInputLayoutValueRequirement(nameInputWrapper, fieldRequired);
-        boolean streetCheck = Utils.checkTextInputLayoutValueRequirement(streetInputWrapper, fieldRequired);
-        boolean houseNumberCheck = Utils.checkTextInputLayoutValueRequirement(houseNumberInputWrapper, fieldRequired);
-        boolean cityCheck = Utils.checkTextInputLayoutValueRequirement(cityInputWrapper, fieldRequired);
-        boolean zipCheck = Utils.checkTextInputLayoutValueRequirement(zipInputWrapper, fieldRequired);
+        boolean fnameCheck = Utils.checkTextInputLayoutValueRequirement(fnameInputWrapper, fieldRequired);
+        boolean lnameCheck = Utils.checkTextInputLayoutValueRequirement(lnameInputWrapper, fieldRequired);
         boolean phoneCheck = Utils.checkTextInputLayoutValueRequirement(phoneInputWrapper, fieldRequired);
         boolean emailCheck = Utils.checkTextInputLayoutValueRequirement(emailInputWrapper, fieldRequired);
 
-        return nameCheck && streetCheck && houseNumberCheck && cityCheck && zipCheck && phoneCheck && emailCheck;
+        boolean addressCheck = Utils.checkTextInputLayoutValueRequirement(addressInputWrapper, fieldRequired);
+        boolean zipCheck = Utils.checkTextInputLayoutValueRequirement(zipInputWrapper, fieldRequired);
+        boolean cityCheck = Utils.checkTextInputLayoutValueRequirement(cityInputWrapper, fieldRequired);
+        boolean countryCheck = Utils.checkTextInputLayoutValueRequirement(countryInputWrapper, fieldRequired);
+        boolean stateCheck = Utils.checkTextInputLayoutValueRequirement(stateInputWrapper, fieldRequired);
+
+
+        return fnameCheck && lnameCheck && phoneCheck && emailCheck && addressCheck && cityCheck && zipCheck && countryCheck && stateCheck;
     }
 
     /**
@@ -225,42 +257,53 @@ public class AccountEditFragment extends Fragment {
         return currentCheck && newCheck && newAgainCheck;
     }
 
-    /**
-     * Volley request for update user details.
-     *
-     * @param user new user data.
-     */
-    private void putUser(User user) {
+    private void putUserAccount(final User updatedUser) {
         if (isRequiredFields()) {
             User activeUser = SettingsMy.getActiveUser();
             if (activeUser != null) {
                 JSONObject joUser = new JSONObject();
                 try {
-                    joUser.put(JsonUtils.TAG_NAME, user.getFirstname());
-                    joUser.put(JsonUtils.TAG_STREET, user.getAddress());
-                    joUser.put(JsonUtils.TAG_HOUSE_NUMBER, user.getAddress());
-                    joUser.put(JsonUtils.TAG_CITY, user.getCity());
-                    joUser.put(JsonUtils.TAG_ZIP, user.getPostalcode());
-                    joUser.put(JsonUtils.TAG_EMAIL, user.getEmail());
-                    joUser.put(JsonUtils.TAG_PHONE, user.getTelephone());
+                    joUser.put(JsonUtils.TAG_EMAIL, updatedUser.getEmail());
+                    joUser.put(JsonUtils.TAG_FIRST_NAME, updatedUser.getFirstname());
+                    joUser.put(JsonUtils.TAG_LAST_NAME, updatedUser.getLastname());
+                    joUser.put(JsonUtils.TAG_TELEPHONE, updatedUser.getTelephone());
+                    joUser.put(JsonUtils.TAG_FAX, "");
+
+                    JSONObject customJO = new JSONObject();
+                    customJO.put(JsonUtils.TAG_GENDER, (SettingsMy.getActiveUser().getUserCustomField().getGender()) != null ? SettingsMy.getActiveUser().getUserCustomField().getGender() : "");
+                    customJO.put(JsonUtils.TAG_PLATFORM, (SettingsMy.getActiveUser().getUserCustomField().getPlatform()) != null ? SettingsMy.getActiveUser().getUserCustomField().getPlatform() : "");
+                    customJO.put(JsonUtils.TAG_DEVICE_TOKEN, (SettingsMy.getActiveUser().getUserCustomField().getDevice_token()) != null ? SettingsMy.getActiveUser().getUserCustomField().getDevice_token() : "");
+
+                    joUser.put(JsonUtils.TAG_CUSTOM_FIELD, customJO);
+
                 } catch (JSONException e) {
                     Timber.e(e, "Parse new user registration exception.");
                     MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_INTERNAL_ERROR, null, MsgUtils.ToastLength.SHORT);
                     return;
                 }
 
-                String url = String.format(EndPoints.USER_SINGLE, activeUser.getCustomer_id());
+                final String url = String.format(EndPoints.USER_SINGLE, activeUser.getCustomer_id());
 
-                progressDialog.show();
-                GsonRequest<UserResponse> req = new GsonRequest<>(Request.Method.PUT, url, joUser.toString(), UserResponse.class,
+                GsonRequest<UserResponse> req = new GsonRequest<>(Request.Method.POST, url, joUser.toString(), UserResponse.class,
                         new Response.Listener<UserResponse>() {
                             @Override
                             public void onResponse(@NonNull UserResponse user) {
-                                SettingsMy.setActiveUser(user.getUser());
-                                refreshScreen(user.getUser());
-                                progressDialog.cancel();
-                                MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, getString(R.string.Ok), MsgUtils.ToastLength.SHORT);
-                                getFragmentManager().popBackStackImmediate();
+                                if (user != null) {
+                                    if (user.getStatusCode() != null && user.getStatusText() != null) {
+                                        if (user.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || user.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                            LoginDialogFragment.logoutUser(true);
+                                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                            loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                            if (progressDialog != null) progressDialog.cancel();
+                                        }
+                                    } else {
+                                        //********TODO: Mahesh check this for user address updation after successful order placement.
+                                        putUserAddress(updatedUser);
+                                    }
+                                } else {
+                                    Timber.d("return null response during putUser");
+                                    progressDialog.cancel();
+                                }
                             }
                         }, new Response.ErrorListener() {
                     @Override
@@ -276,8 +319,76 @@ public class AccountEditFragment extends Fragment {
                 LoginExpiredDialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
                 loginExpiredDialogFragment.show(getFragmentManager(), "loginExpiredDialogFragment");
             }
-        } else {
+        }
+        else
             Timber.d("Missing required fields.");
+    }
+
+    private void putUserAddress(final User updatedUser) {
+
+        User activeUser = SettingsMy.getActiveUser();
+        if (activeUser != null) {
+            JSONObject joUser = new JSONObject();
+            try {
+
+                joUser.put(JsonUtils.TAG_FIRST_NAME, updatedUser.getFirstname());
+                joUser.put(JsonUtils.TAG_LAST_NAME, updatedUser.getLastname());
+                joUser.put(JsonUtils.TAG_ADDRESS1, updatedUser.getAddress().getAddress_1());
+                joUser.put(JsonUtils.TAG_ADDRESS2, updatedUser.getAddress().getAddress_1());
+                joUser.put(JsonUtils.TAG_CITY, updatedUser.getAddress().getCity());
+                joUser.put(JsonUtils.TAG_COMPANY, "");
+                joUser.put(JsonUtils.TAG_COUNTRY, "INDIA");
+                joUser.put(JsonUtils.TAG_COUNTRY_ID, "99");
+                joUser.put(JsonUtils.TAG_ZONE, "Karnataka");
+                joUser.put(JsonUtils.TAG_ZONE_ID, "1489");
+                joUser.put(JsonUtils.TAG_POST_CODE, updatedUser.getAddress().getPostCode());
+
+            } catch (JSONException e) {
+                Timber.e(e, "Parse new user registration exception.");
+                MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_INTERNAL_ERROR, null, MsgUtils.ToastLength.SHORT);
+                return;
+            }
+
+            final String url = String.format(EndPoints.USER_ADDRESS, (activeUser.getAddress_id() != null || activeUser.getAddress_id() != "") ? Integer.parseInt(activeUser.getAddress_id()) : 0);
+
+            GsonRequest<UserResponse> req = new GsonRequest<>(Request.Method.PUT, url, joUser.toString(), UserResponse.class,
+                    new Response.Listener<UserResponse>() {
+                        @Override
+                        public void onResponse(@NonNull UserResponse user) {
+                            if(user != null) {
+                                if(user.getStatusCode() != null && user.getStatusText() != null) {
+                                    if (user.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || user.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                        LoginDialogFragment.logoutUser(true);
+                                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                        if (progressDialog != null) progressDialog.cancel();
+                                    }
+                                }
+                                else {
+                                    //********TODO: Mahesh check this for user address updation after successful order placement.
+                                    SettingsMy.setActiveUser(user.getUser());
+                                    refreshScreen(user.getUser());
+                                    progressDialog.cancel();
+                                    MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, getString(R.string.Ok), MsgUtils.ToastLength.SHORT);
+                                    getFragmentManager().popBackStackImmediate();
+                                }
+                            }
+                            else
+                                Timber.d("return null response during putUser");
+                        }
+                    }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    if (progressDialog != null) progressDialog.cancel();
+                    MsgUtils.logAndShowErrorMessage(getActivity(), error);
+                }
+            }, getFragmentManager(), "");
+            req.setRetryPolicy(MyApplication.getDefaultRetryPolice());
+            req.setShouldCache(false);
+            MyApplication.getInstance().addToRequestQueue(req, CONST.ACCOUNT_EDIT_REQUESTS_TAG);
+        } else {
+            LoginExpiredDialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+            loginExpiredDialogFragment.show(getFragmentManager(), "loginExpiredDialogFragment");
         }
     }
 
@@ -310,10 +421,22 @@ public class AccountEditFragment extends Fragment {
                 JsonRequest req = new JsonRequest(Request.Method.PUT, url, jo, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        Timber.d("Change password successful: %s", response.toString());
-                        MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, getString(R.string.Ok), MsgUtils.ToastLength.SHORT);
-                        if (progressDialog != null) progressDialog.cancel();
-                        getFragmentManager().popBackStackImmediate();
+                        if(response != null) {
+                            if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                                LoginDialogFragment.logoutUser(true);
+                                DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                if (progressDialog != null) progressDialog.cancel();
+                            }
+                            else {
+                                Timber.d("Change password successful: %s", response.toString());
+                                MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, getString(R.string.Ok_password_changed), MsgUtils.ToastLength.SHORT);
+                                if (progressDialog != null) progressDialog.cancel();
+                                getFragmentManager().popBackStackImmediate();
+                            }
+                        }
+                        else
+                            Timber.d("Null response during changePassword....");
                     }
                 }, new Response.ErrorListener() {
                     @Override

@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
@@ -47,6 +48,9 @@ import com.teketys.templetickets.utils.RecyclerMarginDecorator;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.adapters.WishListRecyclerAdapter;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
+
 import timber.log.Timber;
 
 /**
@@ -82,32 +86,54 @@ public class WishlistFragment extends Fragment {
      * @param requestTag      string identifying concrete request. Useful for request cancellation.
      * @param requestListener listener for operation results.
      */
-    public static void addToWishList(final FragmentActivity activity, long variantId, User user, String requestTag, final RequestListener requestListener) {
+    public static void addToWishList(final FragmentActivity activity, final long variantId, User user, String requestTag, final RequestListener requestListener) {
         if (activity != null && variantId != 0 && user != null && requestTag != null && requestListener != null) {
             JSONObject jo = new JSONObject();
             try {
-                jo.put(JsonUtils.TAG_PRODUCT_VARIANT_ID, variantId);
+                //jo.put(JsonUtils.TAG_ID, variantId);
+                jo.put("", "");
             } catch (Exception e) {
                 requestListener.requestFailed(null);
                 Timber.e(e, "Add to wishlist null product.");
                 return;
             }
             //String url = String.format(EndPoints.WISHLIST, SettingsMy.getActualNonNullShop(activity).getId());
-            String url = String.format(EndPoints.WISHLIST);
+            String url = String.format(EndPoints.WISHLIST_SINGLE, variantId);
             JsonRequest req = new JsonRequest(Request.Method.POST, url, jo, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    Timber.d("AddToWishlist response: %s", response.toString());
-                    try {
-                        final long responseId = response.getLong(JsonUtils.TAG_ID);
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                requestListener.requestSuccess(responseId);
+                    if(response != null) {
+                        if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                            LoginDialogFragment.logoutUser(true);
+                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                            loginExpiredDialogFragment.show(activity.getSupportFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                        }
+                        else {
+                            Timber.d("AddToWishlist response: %s", response.toString());
+                            try {
+                                final String resposeStatus = response.getString(JsonUtils.TAG_SUCCESS);
+
+                                //final long responseId = response.getLong(JsonUtils.TAG_ID);
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        requestListener.requestSuccess(0);
+                                    }
+                                }, 500);
+
+                            } catch (Exception e) {
+                                Timber.e(e, "Parsing addToWishList response failed. Response: %s", response);
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        requestListener.requestFailed(null);
+                                    }
+                                }, 500);
                             }
-                        }, 500);
-                    } catch (Exception e) {
-                        Timber.e(e, "Parsing addToWishList response failed. Response: %s", response);
+                        }
+                    }
+                    else {
+                        Timber.d("Null response during addToWishList....");
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
@@ -154,13 +180,24 @@ public class WishlistFragment extends Fragment {
             JsonRequest req = new JsonRequest(Request.Method.DELETE, url, null, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    Timber.d("RemoveFromWishlist response: %s", response.toString());
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            requestListener.requestSuccess(0);
+                    if(response != null) {
+                        if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                            LoginDialogFragment.logoutUser(true);
+                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                            loginExpiredDialogFragment.show(activity.getSupportFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
                         }
-                    }, 500);
+                        else {
+                            Timber.d("RemoveFromWishlist response: %s", response.toString());
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    requestListener.requestSuccess(0);
+                                }
+                            }, 500);
+                        }
+                    }
+                    else
+                        Timber.d("Null response during removeFromWishList....");
                 }
             }, new Response.ErrorListener() {
                 @Override
@@ -291,28 +328,44 @@ public class WishlistFragment extends Fragment {
         String url = String.format(EndPoints.WISHLIST);
 
         progressDialog.show();
-        GsonRequest<WishlistResponse> getWishlist = new GsonRequest<>(Request.Method.GET, url, null, WishlistResponse.class,
-                new Response.Listener<WishlistResponse>() {
-                    @Override
-                    public void onResponse(@NonNull WishlistResponse wishlistResponse) {
-                        if (progressDialog != null) progressDialog.cancel();
-                        if (wishlistResponse.getProducts() != null) {
-                            for (int i = 0; i < wishlistResponse.getProducts().size(); i++) {
-                                wishlistAdapter.add(i, wishlistResponse.getProducts().get(i));
+
+        GsonRequest<WishlistResponse> req = new GsonRequest<>(Request.Method.GET, url, null, WishlistResponse.class, new Response.Listener<WishlistResponse>() {
+            @Override
+            public void onResponse(WishlistResponse response) {
+                if(response != null) {
+                    if(response.getStatusCode() != null && response.getStatusText() != null) {
+                        if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                            LoginDialogFragment.logoutUser(true);
+                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                            loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                            if (progressDialog != null) progressDialog.cancel();
+                        }
+                    }
+                    else {
+                        if (response.getWishlistRecords().getProducts() != null) {
+                            for (int i = 0; i < response.getWishlistRecords().getProducts().size(); i++) {
+                                wishlistAdapter.add(i, response.getWishlistRecords().getProducts().get(i));
                             }
                         }
                         checkIfEmpty();
                     }
-                }, new Response.ErrorListener() {
+                }
+                else
+                    Timber.d("Null response during getWishlistContent....");
+
+                if (progressDialog != null) progressDialog.cancel();
+            }
+        }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 if (progressDialog != null) progressDialog.cancel();
                 MsgUtils.logAndShowErrorMessage(getActivity(), error);
             }
         }, getFragmentManager(), "");
-        getWishlist.setRetryPolicy(MyApplication.getDefaultRetryPolice());
-        getWishlist.setShouldCache(false);
-        MyApplication.getInstance().addToRequestQueue(getWishlist, CONST.CART_REQUESTS_TAG);
+
+        req.setRetryPolicy(MyApplication.getDefaultRetryPolice());
+        req.setShouldCache(false);
+        MyApplication.getInstance().addToRequestQueue(req, CONST.CART_REQUESTS_TAG);
     }
 
     private void checkIfEmpty() {

@@ -6,6 +6,7 @@ package com.teketys.templetickets.ux.fragments;
 
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -25,13 +26,16 @@ import com.teketys.templetickets.SettingsMy;
 import com.teketys.templetickets.api.EndPoints;
 import com.teketys.templetickets.api.GsonRequest;
 import com.teketys.templetickets.entities.User;
+import com.teketys.templetickets.entities.order.CusromerOrderHistoryRecord;
 import com.teketys.templetickets.entities.order.CustomerOrder;
 import com.teketys.templetickets.entities.order.CustomerOrderDetails;
 import com.teketys.templetickets.entities.order.Order;
 import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.RecyclerMarginDecorator;
 import com.teketys.templetickets.utils.Utils;
+import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.adapters.OrderRecyclerAdapter;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
 import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 import timber.log.Timber;
 
@@ -63,6 +67,7 @@ public class OrderFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Timber.d("%s - onCreateView", this.getClass().getSimpleName());
+        MainActivity.setActionBarTitle(getString(R.string.Order_eTicket));
         View view = inflater.inflate(R.layout.fragment_order, container, false);
 
         progressDialog = Utils.generateProgressDialog(getActivity(), false);
@@ -99,10 +104,24 @@ public class OrderFragment extends Fragment {
 
             progressDialog.show();
 
-            GsonRequest<CustomerOrderDetails> req = new GsonRequest<>(Request.Method.GET, url, null, CustomerOrderDetails.class, new Response.Listener<CustomerOrderDetails>() {
+            GsonRequest<CusromerOrderHistoryRecord> req = new GsonRequest<>(Request.Method.GET, url, null, CusromerOrderHistoryRecord.class, new Response.Listener<CusromerOrderHistoryRecord>() {
                 @Override
-                public void onResponse(CustomerOrderDetails response) {
-                    orderRecyclerAdapter.addOrder(response);
+                public void onResponse(CusromerOrderHistoryRecord response) {
+                    if(response != null) {
+                        if(response.getStatusCode() != null && response.getStatusText() != null) {
+                            if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                LoginDialogFragment.logoutUser(true);
+                                DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                if (progressDialog != null) progressDialog.cancel();
+                            }
+                        }
+                        else if(response.getCustomerOrderDetails() != null)
+                            orderRecyclerAdapter.addOrder(response.getCustomerOrderDetails());
+                    }
+                    else
+                        Timber.d("Null response during loadOrderDetail....");
+
                     if (progressDialog != null) progressDialog.cancel();
                 }
             }, new Response.ErrorListener() {

@@ -164,7 +164,7 @@ public class ShippingSpinnerAdapter extends BaseAdapter {
 
             // Set price
             if (item.getPrice() == 0) {
-                holder.price.setText(R.string.free);
+                //holder.price.setText(R.string.free);
             } else {
                 holder.price.setText(context.getResources().getString(R.string.format_plus, item.getPriceFormatted()));
             }

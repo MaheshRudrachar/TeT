@@ -6,19 +6,18 @@ package com.teketys.templetickets.entities;
 
 public class Page {
 
-    private long id;
+    private long information_id;
     private String title;
-    private String text;
+    private String description;
 
-    public Page() {
+    private String bottom;
+
+    public long getInformation_id() {
+        return information_id;
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
+    public void setInformation_id(long information_id) {
+        this.information_id = information_id;
     }
 
     public String getTitle() {
@@ -29,40 +28,23 @@ public class Page {
         this.title = title;
     }
 
-    public String getText() {
-        return text;
+    public String getDescription() {
+        return description;
     }
 
-    public void setText(String text) {
-        this.text = text;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Page page = (Page) o;
-
-        if (id != page.id) return false;
-        if (title != null ? !title.equals(page.title) : page.title != null) return false;
-        return !(text != null ? !text.equals(page.text) : page.text != null);
+    public String getBottom() {
+        return bottom;
     }
 
-    @Override
-    public int hashCode() {
-        int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + (title != null ? title.hashCode() : 0);
-        result = 31 * result + (text != null ? text.hashCode() : 0);
-        return result;
+    public void setBottom(String bottom) {
+        this.bottom = bottom;
     }
 
-    @Override
-    public String toString() {
-        return "Page{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", text='" + text + '\'' +
-                '}';
+
+    public Page() {
     }
 }

@@ -25,7 +25,7 @@ public class StatusActivity extends AppCompatActivity {
 		TextView tv4 = (TextView) findViewById(R.id.textView1);
 		tv4.setText(mainIntent.getStringExtra("transStatus"));
 
-		DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(false);
+		DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(false, true);
 		thankYouDF.show(getSupportFragmentManager(), OrderCreateSuccessDialogFragment.class.getSimpleName());
 	}
 	

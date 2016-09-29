@@ -64,7 +64,7 @@ public class OkHttpStack implements HttpStack {
                 builder.get();
                 break;
             case Request.Method.DELETE:
-                builder.delete();
+                builder.delete(createRequestBody(request));
                 break;
             case Request.Method.POST:
                 builder.post(createRequestBody(request));

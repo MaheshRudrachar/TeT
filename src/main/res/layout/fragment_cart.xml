@@ -20,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/Your_cart_is_empty"
-            android:src="@drawable/cart_empty"/>
+            android:src="@drawable/cart_empty1"/>
 
         <View
             android:layout_width="match_parent"
@@ -89,7 +89,8 @@
                     android:paddingTop="8dp"
                     android:text="@string/Do_you_have_a_discount_code"
                     android:textColor="@color/colorAccent"
-                    android:textSize="16sp"/>
+                    android:textSize="16sp"
+                    android:visibility="invisible" />
 
                 <TextView
                     android:id="@+id/cart_footer_quantity"

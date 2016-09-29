@@ -13,6 +13,26 @@ public class BranchesRequest {
     @SerializedName("records")
     private List<Branch> branches;
 
+    private String statusCode;
+
+    public String getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(String statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
+    }
+
+    private String statusText;
+
     public BranchesRequest(List<Branch> branches) {
         this.branches = branches;
     }

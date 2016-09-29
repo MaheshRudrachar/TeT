@@ -17,6 +17,26 @@ public class User {
     private long customer_group_id;
     private long store_id;
 
+    public UserCustomField getUserCustomField() {
+        return userCustomField;
+    }
+
+    public void setUserCustomField(UserCustomField userCustomField) {
+        this.userCustomField = userCustomField;
+    }
+
+    @SerializedName("account_custom_field")
+    private UserCustomField userCustomField;
+
+    public String getAddress_id() {
+        return address_id;
+    }
+
+    public void setAddress_id(String address_id) {
+        this.address_id = address_id;
+    }
+
+    private String address_id;
     private String firstname;
     private String lastname;
     private String email;
@@ -26,12 +46,12 @@ public class User {
     private String password;
 
     private long newsletter;
-    private String address;
+    private UserAddress address;
     private long status;
 
     private String city;
 
-    private String postalcode;
+    private String postcode;
 
     @SerializedName("fb_id")
     private String fbId;
@@ -40,6 +60,25 @@ public class User {
     private String Country;
 
     private String Region;
+
+    public String getAddress_1() {
+        return address_1;
+    }
+
+    public void setAddress_1(String address_1) {
+        this.address_1 = address_1;
+    }
+
+    public String getAddress_2() {
+        return address_2;
+    }
+
+    public void setAddress_2(String address_2) {
+        this.address_2 = address_2;
+    }
+
+    private String address_1;
+    private String address_2;
 
     private String provider;
 
@@ -75,11 +114,11 @@ public class User {
     }
 
     public String getPostalcode() {
-        return postalcode;
+        return postcode;
     }
 
     public void setPostalcode(String postalcode) {
-        this.postalcode = postalcode;
+        this.postcode = postalcode;
     }
 
     public void setCity(String city) {
@@ -158,11 +197,11 @@ public class User {
         this.newsletter = newsletter;
     }
 
-    public String getAddress() {
+    public UserAddress getAddress() {
         return address;
     }
 
-    public void setAddress(String address) {
+    public void setAddress(UserAddress address) {
         this.address = address;
     }
 
@@ -214,12 +253,13 @@ public class User {
                 ", address='" + address + '\'' +
                 ", status=" + status +
                 ", city='" + city + '\'' +
-                ", postalcode='" + postalcode + '\'' +
+                ", postalcode='" + postcode + '\'' +
                 ", fbId='" + fbId + '\'' +
                 ", access_token='" + access_token + '\'' +
                 ", Country='" + Country + '\'' +
                 ", Region='" + Region + '\'' +
                 ", provider='" + provider + '\'' +
+                ", addressID='" + address_id + '\'' +
                 '}';
     }
 }

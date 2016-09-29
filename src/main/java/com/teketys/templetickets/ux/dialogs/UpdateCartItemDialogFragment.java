@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -22,10 +23,14 @@ import com.android.volley.VolleyError;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
+import com.teketys.templetickets.BuildConfig;
 import com.teketys.templetickets.CONST;
 import com.teketys.templetickets.MyApplication;
 import com.teketys.templetickets.R;
@@ -37,10 +42,14 @@ import com.teketys.templetickets.entities.User;
 import com.teketys.templetickets.entities.cart.CartProductItem;
 import com.teketys.templetickets.entities.cart.CartProductItemVariant;
 import com.teketys.templetickets.entities.product.Product;
+import com.teketys.templetickets.entities.product.ProductAttributeGroups;
+import com.teketys.templetickets.entities.product.ProductAttributes;
 import com.teketys.templetickets.entities.product.ProductColor;
+import com.teketys.templetickets.entities.product.ProductDate;
 import com.teketys.templetickets.entities.product.ProductQuantity;
 import com.teketys.templetickets.entities.product.ProductResponse;
 import com.teketys.templetickets.entities.product.ProductSize;
+import com.teketys.templetickets.entities.product.ProductTime;
 import com.teketys.templetickets.entities.product.ProductVariant;
 import com.teketys.templetickets.entities.product.ProductVariantValues;
 import com.teketys.templetickets.interfaces.RequestListener;
@@ -48,7 +57,10 @@ import com.teketys.templetickets.utils.JsonUtils;
 import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.ux.adapters.CartColorTextSpinnerAdapter;
 import com.teketys.templetickets.ux.adapters.CartSizeSpinnerAdapter;
+import com.teketys.templetickets.ux.adapters.CartTimeTextSpinnerAdapter;
 import com.teketys.templetickets.ux.adapters.QuantitySpinnerAdapter;
+import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
+
 import timber.log.Timber;
 
 /**
@@ -68,8 +80,13 @@ public class UpdateCartItemDialogFragment extends DialogFragment {
     private View dialogProgress;
     private View dialogContent;
     private Spinner itemColorsSpinner;
-    private Spinner itemSizesSpinner;
+    private Spinner timeSpinner;
     private Spinner quantitySpinner;
+    private Button bookingDateButton;
+    private TextView bookingDateText;
+
+    private Product selectedProduct;
+    private ProductTime selectedProductTime;
 
     /**
      * Creates dialog which handles update items in the shopping cart
@@ -107,24 +124,109 @@ public class UpdateCartItemDialogFragment extends DialogFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         Timber.d("%s - OnCreateView", this.getClass().getSimpleName());
-        View view = inflater.inflate(R.layout.dialog_update_cart_item, container, false);
+        final View view = inflater.inflate(R.layout.dialog_update_cart_item, container, false);
 
         dialogProgress = view.findViewById(R.id.dialog_update_cart_item_progress);
         dialogContent = view.findViewById(R.id.dialog_update_cart_item_content);
-        itemColorsSpinner = (Spinner) view.findViewById(R.id.dialog_update_cart_item_color_spin);
-        itemSizesSpinner = (Spinner) view.findViewById(R.id.dialog_update_cart_item_size_spin);
+        //itemColorsSpinner = (Spinner) view.findViewById(R.id.dialog_update_cart_item_color_spin);
+        bookingDateButton = (Button) view.findViewById(R.id.dialog_update_cart_item_date_picker);
+        bookingDateText = (TextView) view.findViewById(R.id.dialog_update_cart_item_date_text);
+
+        timeSpinner = (Spinner) view.findViewById(R.id.dialog_update_cart_item_time_spin);
         TextView itemName = (TextView) view.findViewById(R.id.dialog_update_cart_item_title);
         itemName.setText(cartProductItem.getName());
+
+        //Booking Calendar Option
+        bookingDateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View v) {
+                // Initialize a new date picker dialog fragment
+                //DialogFragment dFragment = new OrderDateSelectFragment();
+
+                // Show the date picker dialog fragment
+                //dFragment.show(getFragmentManager(), "Date Picker");
+
+                final Calendar now = Calendar.getInstance();
+                final DatePickerDialog dpd = DatePickerDialog.newInstance(
+                        new DatePickerDialog.OnDateSetListener() {
+                            @Override
+                            public void onDateSet(DatePickerDialog datePickerDialog, int i, int i1, int i2) {
+                                now.set(i, i1, i2);
+                                bookingDateText.setText(SimpleDateFormat.getDateInstance().format(now.getTime()));
+                            }
+                        },
+                        now.get(Calendar.YEAR),
+                        now.get(Calendar.MONTH),
+                        now.get(Calendar.DAY_OF_MONTH)
+                );
+                dpd.setThemeDark(true);
+                dpd.vibrate(true);
+                dpd.dismissOnPause(true);
+                //dpd.setAccentColor(Color.parseColor("#9C27B0"));
+                dpd.setTitle("Booking Date");
+
+                //***********************
+                //Limit Dates
+                //***********************
+
+                dpd.setMinDate(now);
+
+                /*ArrayList<Calendar> lDates = new ArrayList();
+                for (int i = 0; i <= 2; i++) {
+                    Calendar date = Calendar.getInstance();
+                    date.add(Calendar.MONTH, i);
+                    lDates.add(date);
+                }
+
+                Calendar[] lCalendarArray = lDates.toArray(new Calendar[lDates.size()]);
+                dpd.setSelectableDays(lCalendarArray);*/
+
+                //***********************
+                //Disable Advanced Booking Dates
+                //***********************
+
+                int advancedBookingDays = 0;
+
+                for(ProductAttributeGroups pag : selectedProduct.getAttributeGroups()) {
+                    for(ProductAttributes pa : pag.getProductAttributes()) {
+                        if (pa.getName().toLowerCase().equals(CONST.OPTION_ATTRIBUTE_BOOKING)) {
+                            if (pa.getText() != null || pa.getText() != "")
+                                advancedBookingDays = Integer.valueOf(pa.getText());
+                            else
+                                advancedBookingDays = 1;
+                        }
+                    }
+                }
+
+                ArrayList<Calendar> bDates = new ArrayList();
+                for (int i = 0; i < advancedBookingDays; i++) {
+                    Calendar date = Calendar.getInstance();
+                    date.add(Calendar.DAY_OF_MONTH, i+1);
+                    bDates.add(date);
+                }
+
+                Calendar[] calendarArray = bDates.toArray(new Calendar[bDates.size()]);
+                dpd.setDisabledDays(calendarArray);
+
+                dpd.show(getActivity().getFragmentManager(), "Date Picker");
+
+                //if(bookingDateText.getText() != null || bookingDateText.getText() != "")
+                    //upateTimeSpinner(selectedProduct);
+            }
+        });
+
 
         View btnSave = view.findViewById(R.id.dialog_update_cart_item_save_btn);
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (quantitySpinner != null && itemSizesSpinner != null) {
-                    ProductSize productVariant = (ProductSize) itemSizesSpinner.getSelectedItem();
+                //if (quantitySpinner != null && timeSpinner != null && bookingDateText != null) {
+                if (quantitySpinner != null) {
+                    ProductTime productVariant = (ProductTime) timeSpinner.getSelectedItem();
                     ProductQuantity productQuantity = (ProductQuantity) quantitySpinner.getSelectedItem();
+
                     Timber.d("Selected: %s. Quantity: %s", productVariant, productQuantity);
-                    if (productVariant != null && productVariant.getName() != null && productQuantity != null) {
+                    if (productVariant != null && productVariant.getName() != null && productQuantity != null && bookingDateText != null && bookingDateText.getText() != "") {
                         updateProductInCart(cartProductItem.getKey(), productVariant.getProduct_option_value_id(), productQuantity.getQuantity());
                     } else {
                         Timber.e(new RuntimeException(), "Cannot obtain info about edited cart item.");
@@ -152,8 +254,26 @@ public class UpdateCartItemDialogFragment extends DialogFragment {
         quantitySpinner = (Spinner) view.findViewById(R.id.dialog_update_cart_item_quantity_spin);
         quantitySpinner.setAdapter(adapterQuantity);
 
+        //prepareTimeSpinner(view);
         getProductDetail(cartProductItem);
         return view;
+    }
+
+    private void prepareTimeSpinner(View view) {
+
+        ArrayList<ProductTime> productTimes = new ArrayList<>();
+        timeSpinner.setVisibility(View.VISIBLE);
+
+        ProductTime pt = new ProductTime();
+        pt.setProduct_option_id(CONST.DEFAULT_EMPTY_ID);
+        pt.setProduct_option_value_id(CONST.DEFAULT_EMPTY_ID);
+        pt.setName(getString(R.string.Select_time));
+
+        productTimes.add(0, pt);
+        CartTimeTextSpinnerAdapter cartTimeTextSpinnerAdapter = new CartTimeTextSpinnerAdapter(getActivity());
+        cartTimeTextSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        cartTimeTextSpinnerAdapter.setProductTimeList(productTimes);
+        timeSpinner.setAdapter(cartTimeTextSpinnerAdapter);
     }
 
     // Prepare quantity spinner layout
@@ -176,8 +296,21 @@ public class UpdateCartItemDialogFragment extends DialogFragment {
                 new Response.Listener<ProductResponse>() {
                     @Override
                     public void onResponse(@NonNull ProductResponse response) {
-                        setProgressActive(false);
-                        setSpinners(response.getProduct());
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                }
+                            }
+                            else {
+                                setProgressActive(false);
+                                selectedProduct = response.getProduct();
+                            }
+                        }
+                        else
+                            Timber.d("Null response during getProductDetail....");
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -192,135 +325,118 @@ public class UpdateCartItemDialogFragment extends DialogFragment {
     }
 
 
-    private void setSpinners(final Product product) {
-        if (product != null && product.getVariants() != null && product.getVariants().size() > 0) {
-            List<ProductColor> productColors = new ArrayList<>();
+    private void upateTimeSpinner(Product product) {
+        //**************************************
+        // Set Time Spinner
+        //**************************************
+        List<ProductTime> productTimes = new ArrayList<>();
 
-            for (ProductVariant pv : product.getVariants()) {
-                if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_COLOR)) {
-                    for(ProductVariantValues pvv : pv.getProductVariantValues()) {
-                        ProductColor pac = new ProductColor(pvv.getProduct_option_value_id());
-                        pac.setName(pvv.getName());
-                        pac.setProduct_option_value_id(pvv.getProduct_option_value_id());
-                        pac.setQuantity(pvv.getQuantity());
-                        pac.setImage(pvv.getImage());
+        for (ProductVariant pv : product.getVariants()) {
+            if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
 
-                        if (!productColors.contains(pac)) {
-                            productColors.add(pac);
-                        }
+                for(ProductVariantValues pvv : pv.getProductVariantValues()) {
+                    ProductTime pat = new ProductTime(pvv.getProduct_option_value_id());
+                    pat.setName(pvv.getName());
+                    pat.setProduct_option_value_id(pvv.getProduct_option_value_id());
+                    pat.setQuantity(pvv.getQuantity());
+                    pat.setImage(pvv.getImage());
+
+                    if (!productTimes.contains(pat)) {
+                        productTimes.add(pat);
                     }
                 }
             }
-
-            if (productColors.size() > 1) {
-                itemColorsSpinner.setVisibility(View.VISIBLE);
-                CartColorTextSpinnerAdapter adapterColor = new CartColorTextSpinnerAdapter(getActivity(), productColors);
-                itemColorsSpinner.setAdapter(adapterColor);
-                //ProductColor actualItemColor = cartProductItem.getVariant().getName();
-
-                if (productColors != null) {
-                    int sizeSelection = 0;
-                    for (int i = 0; i < productColors.size(); i++) {
-//                    Timber.d("Compare list: " + variantSizeArrayList.get(i).getId() + " == " + cartProductItem.getVariant().getId() + " as actual");
-                        for(CartProductItemVariant cpiv : cartProductItem.getVariant()) {
-                            if(cpiv.getName().equals(CONST.OPTION_NAME_COLOR)) {
-                                if (productColors.get(i).getName().toLowerCase().equals(cpiv.getValue())) {
-                                    sizeSelection = i;
-                                }
-                            }
-                        }
-
-                    }
-                    itemColorsSpinner.setSelection(sizeSelection);
-
-                } else {
-                    Timber.e("UpdateImagesAndSizeSpinner with null product.");
-                }
-
-                itemColorsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        ProductColor productColor = (ProductColor) parent.getItemAtPosition(position);
-                        if (productColor != null) {
-                            Timber.d("ColorPicker selected color: %s", productColor.toString());
-                            updateSizeSpinner(product, productColor);
-                        } else {
-                            Timber.e("Retrieved null color from spinner.");
-                        }
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parent) {
-                        Timber.d("Nothing selected in product colors spinner.");
-                    }
-                });
-            } else {
-                itemColorsSpinner.setVisibility(View.GONE);
-                updateSizeSpinner(product, productColors.get(0));
-            }
-
-            int selectedPosition = cartProductItem.getQuantity() - 1;
-            if (selectedPosition < 0) selectedPosition = 0;
-            if (selectedPosition > (quantitySpinner.getCount() - 1))
-                Timber.e(new RuntimeException(), "More item quantity that can be. Quantity: %d, max: %d", (selectedPosition + 1), quantitySpinner.getCount());
-            else
-                quantitySpinner.setSelection(selectedPosition);
-        } else {
-            Timber.e("Setting spinners for null product variants.");
-            MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_INTERNAL_ERROR, null, MsgUtils.ToastLength.SHORT);
         }
-    }
 
-    /**
-     * Update size values in size adapter.
-     *
-     * @param product      updated product.
-     * @param productColor actually selected color.
-     */
-    private void updateSizeSpinner(Product product, ProductColor productColor) {
-        if (product != null) {
-            ArrayList<ProductSize> variantSizeArrayList = new ArrayList<>();
+        if (productTimes.size() > 1) {
+            timeSpinner.setVisibility(View.VISIBLE);
 
-            for (ProductVariant pv : product.getVariants()) {
-                if (pv.getName().toLowerCase().equals(CONST.OPTION_NAME_SIZE)) {
-                    for (ProductVariantValues sizePVV : pv.getProductVariantValues()) {
-                        ProductSize ps = new ProductSize();
-                        ps.setProduct_option_id(sizePVV.getProduct_option_id());
-                        ps.setName(sizePVV.getName());
-                        ps.setProduct_option_value_id(sizePVV.getProduct_option_value_id());
-                        variantSizeArrayList.add(ps);
+            ProductTime pt = new ProductTime();
+            pt.setProduct_option_id(CONST.DEFAULT_EMPTY_ID);
+            pt.setProduct_option_value_id(CONST.DEFAULT_EMPTY_ID);
+            pt.setName(getString(R.string.Select_time));
+
+            productTimes.add(0, pt);
+
+            CartTimeTextSpinnerAdapter timeSpinnerAdapter = new CartTimeTextSpinnerAdapter(getActivity());
+            timeSpinnerAdapter.setProductTimeList(productTimes);
+            timeSpinner.setAdapter(timeSpinnerAdapter);
+            timeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    ProductTime productTime = (ProductTime) parent.getItemAtPosition(position);
+                    if (productTime != null) {
+                        selectedProductTime = productTime;
+                        Timber.d("TimePicker selected time: %s", productTime.toString());
+                    } else {
+                        selectedProductTime = null;
+                        Timber.e("Retrieved null time from spinner.");
                     }
                 }
-            }
 
-            // Show sizes
-            CartSizeSpinnerAdapter adapterSize = new CartSizeSpinnerAdapter(getActivity(), variantSizeArrayList);
-            itemSizesSpinner.setAdapter(adapterSize);
-            // Select actual size
-            if (!variantSizeArrayList.isEmpty()) {
-                int sizeSelection = 0;
-                for (int i = 0; i < variantSizeArrayList.size(); i++) {
-//                    Timber.d("Compare list: " + variantSizeArrayList.get(i).getId() + " == " + cartProductItem.getVariant().getId() + " as actual");
-
-                    for(CartProductItemVariant cpiv : cartProductItem.getVariant()) {
-                        if(cpiv.getName().equals(CONST.OPTION_NAME_SIZE)) {
-                            if (variantSizeArrayList.get(i).getName().toLowerCase().equals(cpiv.getValue())) {
-                                sizeSelection = i;
-                            }
-                        }
-                    }
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    selectedProductTime = null;
+                    Timber.d("Nothing selected in product time spinner.");
                 }
-                itemSizesSpinner.setSelection(sizeSelection);
-            }
+            });
         } else {
-            Timber.e("UpdateImagesAndSizeSpinner with null product.");
+            timeSpinner.setVisibility(View.GONE);
+            selectedProductTime = null;
+            Timber.e("Setting timers spinners for null product variants.");
+                /*for (ProductVariant pv : product.getVariants()) {
+                    if (pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
+                        timeSpinner.setVisibility(View.GONE);
+                        updateDateAndTimeSpinner(productTimes.get(0));
+                    }
+                }*/
         }
     }
 
     private void updateProductInCart(long productCartId, long newVariantId, int newQuantity) {
         User user = SettingsMy.getActiveUser();
+        long timeID = 0;
+        long dateID = 0;
+
         if (user != null) {
+            // get selected radio button from radioGroup
             JSONObject jo = new JSONObject();
+
+            try {
+                JSONObject optionSize = new JSONObject();
+
+                /*for (ProductVariant pv : selectedProduct.getVariants()) {
+                    if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
+                        timeID = pv.getProductOptionId();
+                    }
+
+                    if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_DATE)) {
+                        dateID = pv.getProductOptionId();
+                    }
+                }
+
+                optionSize.put(String.valueOf(timeID), selectedProductTime.getProduct_option_value_id());
+                String selectedDate = bookingDateText.getText().toString();
+                if(selectedDate != "") {
+                    optionSize.put(String.valueOf(dateID), selectedDate);
+                }
+                else {
+                    //Error Message TODO Mahesh
+                }*/
+
+                jo.put(JsonUtils.TAG_KEY, productCartId + "::");
+                //jo.put(JsonUtils.TAG_OPTION, optionSize);
+                jo.put(JsonUtils.TAG_QUANTITY, newQuantity);
+
+                if (BuildConfig.DEBUG) Timber.d("json input: %s", jo.toString());
+
+            } catch (JSONException e) {
+                Timber.e(e, "Create json add product to cart exception");
+                MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_INTERNAL_ERROR, null, MsgUtils.ToastLength.SHORT);
+                return;
+            }
+
+            /*JSONObject jo = new JSONObject();
             try {
                 jo.put(JsonUtils.TAG_KEY, productCartId + "::");
                 jo.put(JsonUtils.TAG_QUANTITY, newQuantity);
@@ -328,7 +444,8 @@ public class UpdateCartItemDialogFragment extends DialogFragment {
                 Timber.e(e, "Create update object exception");
                 MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_INTERNAL_ERROR, null, MsgUtils.ToastLength.SHORT);
                 return;
-            }
+            }*/
+
             Timber.d("update product: %s", jo.toString());
 
             String url = String.format(EndPoints.CART_ITEM);
@@ -337,10 +454,21 @@ public class UpdateCartItemDialogFragment extends DialogFragment {
             JsonRequest req = new JsonRequest(Request.Method.PUT, url, jo, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    Timber.d("Update item in cart: %s", response.toString());
-                    if (requestListener != null) requestListener.requestSuccess(0);
-                    setProgressActive(false);
-                    dismiss();
+                    if(response!= null) {
+                        if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                            LoginDialogFragment.logoutUser(true);
+                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                            loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                        }
+                        else {
+                            Timber.d("Update item in cart: %s", response.toString());
+                            if (requestListener != null) requestListener.requestSuccess(0);
+                            setProgressActive(false);
+                            dismiss();
+                        }
+                    }
+                    else
+                        Timber.d("Null response during updateProductInCart....");
                 }
             }, new Response.ErrorListener() {
                 @Override

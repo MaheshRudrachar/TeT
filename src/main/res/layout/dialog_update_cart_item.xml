@@ -47,22 +47,62 @@
             android:orientation="vertical"
             android:visibility="visible">
 
-            <Spinner
-                android:id="@+id/dialog_update_cart_item_color_spin"
+            <LinearLayout
+                style="?android:attr/buttonBarStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:orientation="horizontal">
+
+            <Button
+                android:layout_width="182dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/button_primary_action_ripple"
+                android:text="@string/Booking_date"
+                android:textColor="@color/textIconColorPrimary"
+                android:id="@+id/dialog_update_cart_item_date_picker"
+                style="?android:attr/buttonBarButtonStyle"
+                android:gravity="center"
+                android:minHeight="1dp"
+                android:minWidth="1dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:textSize="18sp"
+                android:visibility="invisible" />
+
+            <!-- <Spinner
+                android:id="@+id/dialog_update_cart_item_date_picker"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/spinner_background_black_baseline"
+                android:background="@drawable/button_primary_action_ripple"
                 android:paddingBottom="4dp"
-                android:paddingTop="4dp"/>
+                android:paddingTop="4dp"/> -->
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="date"
+                android:ems="10"
+                android:id="@+id/dialog_update_cart_item_date_text"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginLeft="15dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                android:minHeight="1dp"
+                android:minWidth="1dp"
+                android:textColor="@color/colorAccent"
+                android:visibility="invisible" />
+            </LinearLayout>
 
             <Spinner
-                android:id="@+id/dialog_update_cart_item_size_spin"
+                android:id="@+id/dialog_update_cart_item_time_spin"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:background="@drawable/spinner_background_black_baseline"
                 android:paddingBottom="4dp"
-                android:paddingTop="4dp"/>
+                android:paddingTop="4dp"
+                android:visibility="invisible" />
 
             <Spinner
                 android:id="@+id/dialog_update_cart_item_quantity_spin"

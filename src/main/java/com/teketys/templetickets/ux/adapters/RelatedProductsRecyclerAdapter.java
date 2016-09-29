@@ -87,8 +87,8 @@ public class RelatedProductsRecyclerAdapter extends RecyclerView.Adapter<Related
             Picasso.with(context)
                     .load(product.getThumb())
                     .fit().centerInside()
-                    .placeholder(R.drawable.placeholder_loading)
-                    .error(R.drawable.placeholder_error)
+                    .placeholder(R.drawable.placeholder_loading1)
+                    .error(R.drawable.placeholder_error1)
                     .into(holder.productImage);
         } else {
             Timber.e("%s tried setting null product!", this.getClass().getSimpleName());

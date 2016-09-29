@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -37,17 +38,23 @@ import com.teketys.templetickets.entities.cart.Cart;
 import com.teketys.templetickets.entities.cart.CartDiscountItem;
 import com.teketys.templetickets.entities.cart.CartProductItem;
 import com.teketys.templetickets.entities.cart.CartResponse;
+import com.teketys.templetickets.entities.cart.CartTotals;
 import com.teketys.templetickets.interfaces.CartRecyclerInterface;
 import com.teketys.templetickets.interfaces.RequestListener;
 import com.teketys.templetickets.listeners.OnSingleClickListener;
+import com.teketys.templetickets.utils.JsonUtils;
 import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.RecyclerDividerDecorator;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.adapters.CartRecyclerAdapter;
 import com.teketys.templetickets.ux.dialogs.DiscountDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
 import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 import com.teketys.templetickets.ux.dialogs.UpdateCartItemDialogFragment;
+
+import java.text.DecimalFormat;
+
 import timber.log.Timber;
 
 /**
@@ -140,17 +147,49 @@ public class CartFragment extends Fragment {
                     new Response.Listener<CartResponse>() {
                         @Override
                         public void onResponse(@NonNull CartResponse cart) {
+
                             if (progressDialog != null) progressDialog.cancel();
 
-                            MainActivity.updateCartCountNotification();
-                            if (cart.getCart() == null || cart.getCart().getItems().size() == 0) {
-                                setCartVisibility(false);
-                            } else {
-                                setCartVisibility(true);
-                                cartRecyclerAdapter.refreshItems(cart.getCart());
+                            if(cart != null) {
+                                if(cart.getStatusCode() != null && cart.getStatusText() != null) {
+                                    if (cart.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || cart.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                        LoginDialogFragment.logoutUser(true);
+                                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                        if (progressDialog != null) progressDialog.cancel();
+                                    }
+                                }
+                                else {
 
-                                cartItemCountTv.setText(getString(R.string.format_quantity, cart.getCart().getProductCount()));
-                                cartTotalPriceTv.setText(cart.getCart().getTotalPriceFormatted());
+                                    if (cart.getCart() == null || cart.getCart().getItems().size() == 0) {
+                                        setCartVisibility(false);
+                                        MainActivity.updateCartCountNotification(0);
+
+                                    } else {
+                                        setCartVisibility(true);
+                                        cartRecyclerAdapter.refreshItems(cart.getCart());
+
+                                        MainActivity.updateCartCountNotification(cart.getCart().getProductCount());
+
+                                        String totalCost = null;
+
+                                        /***
+                                         * Calculate the total price of the puja
+                                         */
+                                        for(CartTotals cTotals : cart.getCart().getCartTotals()) {
+                                            if(cTotals.getTitle().toLowerCase().equals(CONST.TOTAL_PRICE)) {
+                                                totalCost = cTotals.getText().replace(",","");
+                                                break;
+                                            }
+                                        }
+
+                                        calculateTotalPujaCost(totalCost, cart.getCart().getItems().get(0).getCurrency(), cart.getCart().getProductCount());
+                                    }
+                                }
+                            }
+                            else {
+                                Timber.d("return null response during getCartContent");
+                                MainActivity.updateCartCountNotification(0);
                             }
                         }
                     }, new Response.ErrorListener() {
@@ -171,6 +210,50 @@ public class CartFragment extends Fragment {
         }
     }
 
+    private void calculateTotalPujaCost(String pujaCost, String currency, int productCount) {
+
+        if(pujaCost != null && pujaCost != "") {
+            double basePujaCost = Double.valueOf(pujaCost);
+
+            //Convenience Fees
+            double convenienceFees = CONST.CONVENIENCE_FEES;
+
+            //Calculate Base Service Tax
+            double serviceTax = (convenienceFees * CONST.BASE_SERVICE_TAX) / 100;
+
+            //Calculate Swacch Bharath Cess
+            double swacchBC = (convenienceFees * CONST.SWACCH_BHARATH_CESS) / 100;
+
+            //Calculate Krishi Kalyan Cess
+            double krishiKC = (convenienceFees * CONST.KRISHI_KALYAN_CESS) / 100;
+
+            //Total Convenience Fees
+            double totalConvenienceFees = (convenienceFees + serviceTax + swacchBC + krishiKC) * productCount;
+
+            //Total Puja Cost
+            double totalPujaCost = basePujaCost + totalConvenienceFees;
+
+            DecimalFormat df = new DecimalFormat("#.##");
+
+            StringBuffer priceBreakUpSB = new StringBuffer();
+            priceBreakUpSB.append(getString(R.string.format_quantity, productCount) + "\n");
+            priceBreakUpSB.append("----------------------" + "\n");
+            priceBreakUpSB.append("Convenience Fees: "+ String.format("%.2f",convenienceFees) + "\n");
+            priceBreakUpSB.append("Base Service Tax: "+ String.format("%.2f", serviceTax) + "\n");
+            priceBreakUpSB.append("Swacch Bharat Cess: "+ String.format("%.2f", swacchBC) + "\n");
+            priceBreakUpSB.append("Krishi Kalyan Cess: "+ String.format("%.2f", krishiKC) + "\n");
+            priceBreakUpSB.append("----------------------" + "\n");
+            priceBreakUpSB.append("Total Convenience Fees: "+ String.format("%.2f", totalConvenienceFees));
+
+            StringBuffer totalBreakUp = new StringBuffer();
+            totalBreakUp.append("Puja Cost: "+ String.format("%.2f", basePujaCost) + "\n");
+            totalBreakUp.append("Total Cost ("+ currency +"): " +String.format("%.2f", totalPujaCost));
+
+            cartItemCountTv.setText(priceBreakUpSB.toString());
+            cartTotalPriceTv.setText(totalBreakUp.toString());
+        }
+
+    }
 
     private void setCartVisibility(boolean visible) {
         if (visible) {
@@ -239,29 +322,42 @@ public class CartFragment extends Fragment {
 
                     JSONObject jo = new JSONObject();
                     try {
-                        jo.put(CONST.PRODUCT_KEY_ID, String.valueOf(id) + "::");
+                        jo.put(JsonUtils.TAG_KEY, String.valueOf(id) + "::");
                         Timber.d("Json input for delete cart item %s", jo.toString());
                     } catch (JSONException e) {
                         Timber.e(e, "Parse new user registration exception");
                         return;
                     }
 
-                    progressDialog.show();
+                    //progressDialog.show();
                     JsonRequest req = new JsonRequest(Request.Method.DELETE, EndPoints.CART_DELETE, jo, new Response.Listener<JSONObject>() {
                         @Override
-                        public void onResponse(JSONObject response) {
-                            Timber.d("Delete item from cart: %s", response.toString());
+                        public void onResponse(@NonNull JSONObject response) {
                             try {
 
                                 if(response != null) {
-                                    if (Boolean.valueOf(response.getString("success"))) {
-                                        getCartContent();
-                                        MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE,
-                                                getString(R.string.The_item_has_been_successfully_removed), MsgUtils.ToastLength.LONG);
-                                    } else {
-                                        Timber.d("JSON Response returned %s", response.toString());
+
+                                    if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                                        LoginDialogFragment.logoutUser(true);
+                                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                        if (progressDialog != null) progressDialog.cancel();
+                                    }
+                                    else {
+                                        Timber.d("Delete item from cart: %s", response.toString());
+                                        if (Boolean.valueOf(response.getString("success"))) {
+                                            getCartContent();
+
+                                            MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE,
+                                                    getString(R.string.The_item_has_been_successfully_removed), MsgUtils.ToastLength.LONG);
+                                        } else {
+                                            Timber.d("JSON Response returned %s", response.toString());
+                                        }
                                     }
                                 }
+                                else
+                                    Timber.d("Null response during deleteItemFromCart....");
+
                             } catch (JSONException e) {
                                 Timber.e(e, "Parse new user registration exception");
                                 return;
@@ -275,7 +371,8 @@ public class CartFragment extends Fragment {
                             if (progressDialog != null) progressDialog.cancel();
                             MsgUtils.logAndShowErrorMessage(getActivity(), error);
                         }
-                    }, getFragmentManager(), "");
+                    }, getActivity().getSupportFragmentManager(), "");
+
                     req.setRetryPolicy(MyApplication.getDefaultRetryPolice());
                     req.setShouldCache(false);
                     MyApplication.getInstance().addToRequestQueue(req, CONST.CART_REQUESTS_TAG);

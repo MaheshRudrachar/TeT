@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.provider.Settings;
@@ -23,6 +24,13 @@ import com.facebook.FacebookSdk;
 
 import java.util.Locale;
 
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
 import com.teketys.templetickets.api.OkHttpStack;
 import timber.log.Timber;
 
@@ -78,6 +86,8 @@ public class MyApplication extends Application {
         mInstance = this;
         FacebookSdk.sdkInitialize(this);
 
+
+
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());
         } else {
@@ -102,6 +112,8 @@ public class MyApplication extends Application {
             // should never happen
             Timber.e(e, "App versionName not found. WTF?. This should never happen.");
         }
+
+        initImageLoader(getApplicationContext());
     }
 
     /**
@@ -141,6 +153,25 @@ public class MyApplication extends Application {
             mRequestQueue.cancelAll(tag);
         }
     }
+
+    public static void initImageLoader(Context context) {
+        DisplayImageOptions options = new DisplayImageOptions.Builder()
+                //.showImageForEmptyUri(R.drawable.ic_empty)
+                //.showImageOnFail(R.drawable.ic_error).resetViewBeforeLoading()
+                .cacheOnDisc().imageScaleType(ImageScaleType.EXACTLY_STRETCHED)
+                .bitmapConfig(Bitmap.Config.RGB_565)
+                .displayer(new FadeInBitmapDisplayer(100)).build();
+
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(
+                context).threadPriority(Thread.NORM_PRIORITY - 2)
+                .denyCacheImageMultipleSizesInMemory()
+                .discCacheFileNameGenerator(new Md5FileNameGenerator())
+                .defaultDisplayImageOptions(options)
+                .tasksProcessingOrder(QueueProcessingType.LIFO).build();
+
+        ImageLoader.getInstance().init(config);
+    }
+
     //////////////////////// end of Volley request. ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

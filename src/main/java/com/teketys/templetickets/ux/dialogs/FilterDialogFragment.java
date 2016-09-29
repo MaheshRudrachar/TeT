@@ -16,10 +16,15 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 
+import com.teketys.templetickets.CONST;
 import com.teketys.templetickets.R;
 import com.teketys.templetickets.entities.filtr.DeserializerFilters;
+import com.teketys.templetickets.entities.filtr.Filter;
+import com.teketys.templetickets.entities.filtr.FilterGroups;
 import com.teketys.templetickets.entities.filtr.FilterType;
 import com.teketys.templetickets.entities.filtr.FilterTypeColor;
+import com.teketys.templetickets.entities.filtr.FilterTypeDeity;
+import com.teketys.templetickets.entities.filtr.FilterTypePuja;
 import com.teketys.templetickets.entities.filtr.FilterTypeRange;
 import com.teketys.templetickets.entities.filtr.FilterTypeSelect;
 import com.teketys.templetickets.entities.filtr.Filters;
@@ -87,15 +92,23 @@ public class FilterDialogFragment extends DialogFragment {
             public void onClick(View v) {
                 // Clear all selected values
                 if (filterData != null) {
-                    for (FilterType filterType : filterData.getFilters()) {
-                        if (DeserializerFilters.FILTER_TYPE_RANGE.equals(filterType.getType())) {
-                            ((FilterTypeRange) filterType).setSelectedMin(-1);
-                            ((FilterTypeRange) filterType).setSelectedMax(-1);
-                        } else if (DeserializerFilters.FILTER_TYPE_COLOR.equals(filterType.getType())) {
-                            ((FilterTypeColor) filterType).setSelectedValue(null);
-                        } else if (DeserializerFilters.FILTER_TYPE_SELECT.equals(filterType.getType())) {
-                            ((FilterTypeSelect) filterType).setSelectedValue(null);
+                    for(FilterGroups fg : filterData.getFilterGroups()){
+                        //check filterGroup Name and ID (Puja_Type & Deity_God)
+                        if(fg.getName().toLowerCase().equals(CONST.FILTER_PUJA_TYPE)) {
+                            FilterTypePuja ftp =  new FilterTypePuja();
+                            ftp.setSelectedValue(null);
                         }
+
+                        if(fg.getName().toLowerCase().equals(CONST.FILTER_DEITY_GOD)) {
+                            FilterTypeDeity ftd = new FilterTypeDeity();
+                            ftd.setSelectedValue(null);
+                        }
+
+                        //
+                     /*   for(Filter filter : fg.getFilter()) {
+                            //Check for actaul Filter (Dailxy & Special, Gods)
+                            filter
+                        }*/
                     }
                 }
                 filterDialogInterface.onFilterCancelled();
@@ -118,8 +131,8 @@ public class FilterDialogFragment extends DialogFragment {
     private String buildFilterUrl() {
         String filterUrl = "";
 
-        for (FilterType filterType : filterData.getFilters()) {
-            if (DeserializerFilters.FILTER_TYPE_COLOR.equals(filterType.getType())) {
+        for (FilterGroups fg : filterData.getFilterGroups()) {
+            /*if (fg.getName().toLowerCase().equals(CONST.FILTER_PUJA_TYPE)) {
                 FilterTypeColor filterTypeColor = (FilterTypeColor) filterType;
                 if (filterTypeColor.getSelectedValue() != null) {
                     filterUrl += "&" + filterType.getLabel() + "=" + filterTypeColor.getSelectedValue().getId();
@@ -136,7 +149,7 @@ public class FilterDialogFragment extends DialogFragment {
                 }
             } else {
                 Timber.e("Unknown filter type.");
-            }
+            }*/
         }
 
         Timber.d("BuildFilterUrl - %s", filterUrl);

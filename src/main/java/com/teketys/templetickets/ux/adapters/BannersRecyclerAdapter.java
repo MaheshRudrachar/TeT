@@ -60,7 +60,7 @@ public class BannersRecyclerAdapter extends RecyclerView.Adapter<BannersRecycler
         holder.bindContent(banner);
 
         Picasso.with(context).load(banner.getImageUrl())
-                .placeholder(R.drawable.placeholder_loading)
+                .placeholder(R.drawable.placeholder_loading1)
                 .fit().centerInside()
                 .into(holder.bannerImage);
     }

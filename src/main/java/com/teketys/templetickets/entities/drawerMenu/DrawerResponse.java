@@ -14,6 +14,26 @@ public class DrawerResponse {
     private List<DrawerItemCategory> navigation;
     private List<DrawerItemPage> pages;
 
+    private String statusCode;
+
+    public String getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(String statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
+    }
+
+    private String statusText;
+
     public DrawerResponse() {
     }
 

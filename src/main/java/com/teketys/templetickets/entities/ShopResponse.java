@@ -15,6 +15,27 @@ public class ShopResponse {
     @SerializedName("data")
     Shop shop;
 
+    private String statusCode;
+
+    public String getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(String statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
+    }
+
+    private String statusText;
+
+
     public ShopResponse() {
     }
 

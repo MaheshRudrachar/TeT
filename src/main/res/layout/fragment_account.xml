@@ -132,7 +132,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/Branches"/>
+                    android:text="@string/Branches"
+                    android:visibility="invisible" />
 
                 <View
                     android:layout_width="@dimen/base_margin"
@@ -141,7 +142,7 @@
                 <Button
                     android:id="@+id/account_settings"
                     style="@style/buttonSecondaryStyle"
-                    android:layout_width="0dp"
+                    android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/Settings"/>

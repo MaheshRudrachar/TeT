@@ -25,6 +25,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.AttributeSet;
 import android.util.Base64;
@@ -43,11 +44,14 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.facebook.appevents.AppEventsLogger;
 import com.facebook.applinks.AppLinkData;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import com.teketys.templetickets.CONST;
 import com.teketys.templetickets.MyApplication;
@@ -64,6 +68,7 @@ import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.adapters.ShopSpinnerAdapter;
 import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -97,6 +102,7 @@ public class SplashActivity extends AppCompatActivity {
     private View layoutContent;
     private View layoutContentNoConnection;
     private View layoutContentSelectShop;
+    private GifWebView splashView;
 
     private static final String ACCESS_TOKEN = "access_token";
 
@@ -108,7 +114,21 @@ public class SplashActivity extends AppCompatActivity {
 
         progressDialog = Utils.generateProgressDialog(this, false);
 
+        InputStream stream = null;
+        try {
+            stream = getAssets().open("login_background.gif");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        splashView = new GifWebView(this, "file:///android_asset/login_background.gif");
+
+        setContentView(splashView);
+
         //Remove this Mahesh........
+        SettingsMy.setActualPage(0);
+        SettingsMy.setTotalPageCount(0);
+
         //SettingsMy.setActualShop(null);
         //SettingsMy.setActualShop(null);
         //SettingsMy.setAPIToken(null);
@@ -129,11 +149,15 @@ public class SplashActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(JSONObject response) {
                     try {
-                        Timber.d("response: %s", response.toString());
+                        if(response != null) {
+                            Timber.d("response: %s", response.toString());
 
-                        SettingsMy.setAPIToken(response.getString(ACCESS_TOKEN));
-                        SettingsMy.setOLDToken(response.getString(ACCESS_TOKEN));
-                        init();
+                            SettingsMy.setAPIToken(response.getString(ACCESS_TOKEN));
+                            SettingsMy.setOLDToken(response.getString(ACCESS_TOKEN));
+                            init();
+                        }
+                        else
+                            Timber.d("Null response during splash activity init....");
 
                     } catch (JSONException e) {
                         Timber.e(e, "Exception while parsing oauth result");
@@ -175,25 +199,20 @@ public class SplashActivity extends AppCompatActivity {
      */
 
     private void init() {
-        // Check if data connected.
-        //Change this later to put it inside if network connected
-        //TODO Mahesh
-        progressDialog.hide();
-        Timber.d("No network connection.");
-
-        // init loading dialog
-        initSplashLayout();
-
-        // Skip intro screen.
-        layoutContent.setVisibility(View.VISIBLE);
-        layoutIntroScreen.setVisibility(View.GONE);
-
-        // Show retry button.
-        layoutContentNoConnection.setVisibility(View.VISIBLE);
-        layoutContentSelectShop.setVisibility(View.GONE);
-
         if (!MyApplication.getInstance().isDataConnected()) {
+            progressDialog.hide();
+            Timber.d("No network connection.");
 
+            // init loading dialog
+            initSplashLayout();
+
+            // Skip intro screen.
+            layoutContent.setVisibility(View.VISIBLE);
+            layoutIntroScreen.setVisibility(View.GONE);
+
+            // Show retry button.
+            layoutContentNoConnection.setVisibility(View.VISIBLE);
+            layoutContentSelectShop.setVisibility(View.GONE);
 
         } else {
             progressDialog.hide();
@@ -276,16 +295,30 @@ public class SplashActivity extends AppCompatActivity {
                             @Override
                             public void onResponse(Shop shop) {
                                 progressDialog.cancel();
-                                Bundle bundle = new Bundle();
-                                bundle.putString(CONST.BUNDLE_PASS_TARGET, target);
-                                bundle.putString(CONST.BUNDLE_PASS_TITLE, title);
+                                if(shop != null) {
+                                    if(shop.getStatusCode() != null && shop.getStatusText() != null) {
+                                        if (shop.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || shop.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                            LoginDialogFragment.logoutUser(true);
+                                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                            loginExpiredDialogFragment.show(getSupportFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                            if (progressDialog != null) progressDialog.cancel();
+                                        }
+                                    }
+                                    else {
+                                        Bundle bundle = new Bundle();
+                                        bundle.putString(CONST.BUNDLE_PASS_TARGET, target);
+                                        bundle.putString(CONST.BUNDLE_PASS_TITLE, title);
 
-                                // Logout user if shop changed
-                                Shop actualShop = SettingsMy.getActualShop();
-                                if (actualShop != null && shop.getId() != actualShop.getId())
-                                    LoginDialogFragment.logoutUser();
+                                        // Logout user if shop changed
+                                        Shop actualShop = SettingsMy.getActualShop();
+                                        if (actualShop != null && shop.getId() != actualShop.getId())
+                                            LoginDialogFragment.logoutUser(false);
 
-                                setShopInformationAndStartMainActivity(shop, bundle);
+                                        setShopInformationAndStartMainActivity(shop, bundle);
+                                    }
+                                }
+                                else
+                                    Timber.d("returned null response during init");
                             }
                         }, new Response.ErrorListener() {
                             @Override
@@ -404,10 +437,24 @@ public class SplashActivity extends AppCompatActivity {
                 new Response.Listener<ShopMetaDataResponse>() {
                     @Override
                     public void onResponse(@NonNull ShopMetaDataResponse response) {
-                        Timber.d("Get shops response: %s", response.toString());
-                        setSpinShops(response.getShopMetaDataList());
-                        if (progressDialog != null) progressDialog.cancel();
-                        animateContentVisible();
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getSupportFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                    if (progressDialog != null) progressDialog.cancel();
+                                }
+                            }
+                            else {
+                                Timber.d("Get shops response: %s", response.toString());
+                                setSpinShops(response.getShopMetaDataList());
+                                if (progressDialog != null) progressDialog.cancel();
+                                animateContentVisible();
+                            }
+                        }
+                        else
+                            Timber.d("Null response during requestShops....");
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -448,9 +495,23 @@ public class SplashActivity extends AppCompatActivity {
                         new Response.Listener<ShopResponse>() {
                             @Override
                             public void onResponse(@NonNull ShopResponse response) {
-                                Timber.d("Get shops response: %s", response.toString());
-                                shopList.add(response.getShop());
-                                setSpinShopDetails(shopList);
+                                if(response != null) {
+                                    if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                        if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                            LoginDialogFragment.logoutUser(true);
+                                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                            loginExpiredDialogFragment.show(getSupportFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                            if (progressDialog != null) progressDialog.cancel();
+                                        }
+                                    }
+                                    else {
+                                        Timber.d("Get shops response: %s", response.toString());
+                                        shopList.add(response.getShop());
+                                        setSpinShopDetails(shopList);
+                                    }
+                                }
+                                else
+                                    Timber.d("Null response during setSpinShops....");
                             }
                         }, new Response.ErrorListener() {
                     @Override
@@ -553,7 +614,7 @@ public class SplashActivity extends AppCompatActivity {
 
                                 Animator animator = ViewAnimationUtils.createCircularReveal(layoutContent, cx, cy, 0, finalRadius);
                                 animator.setInterpolator(new AccelerateDecelerateInterpolator());
-                                animator.setDuration(1250);
+                                animator.setDuration(2550);
                                 layoutContent.setVisibility(View.VISIBLE);
                                 animator.start();
                             } else {
@@ -562,11 +623,11 @@ public class SplashActivity extends AppCompatActivity {
                                 layoutContent.setVisibility(View.VISIBLE);
                                 layoutContent.animate()
                                         .alpha(1f)
-                                        .setDuration(1000)
+                                        .setDuration(2000)
                                         .setListener(null);
                             }
                         }
-                    }, 330);
+                    }, 2000);
                 }
             });
         }

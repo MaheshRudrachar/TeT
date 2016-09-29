@@ -5,6 +5,8 @@ package com.teketys.templetickets.ux.adapters;
  */
 
 import android.content.Context;
+import android.content.DialogInterface;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -119,16 +121,23 @@ public class CartRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                     date = cpi.getValue();
             }
 
-            viewHolderProduct.cartProductDetails.setText(context.getString(
-                    R.string.format_string_division, color,
-                    size, date, time));
+            if(color != null || size != null) {
+                viewHolderProduct.cartProductDetails.setText(context.getString(
+                        R.string.format_string_division, color,
+                        size, date, time));
+            }
+            else {
+                viewHolderProduct.cartProductDetails.setText(context.getString(
+                        R.string.format_string_division_two, date, time));
+            }
+
             viewHolderProduct.cartProductQuantity.setText(context.getString(R.string.format_quantity,
                     cartProductItem.getQuantity()));
 
             Picasso.with(context).load(cartProductItem.getThumb())
                     .fit().centerInside()
-                    .placeholder(R.drawable.placeholder_loading)
-                    .error(R.drawable.placeholder_error)
+                    .placeholder(R.drawable.placeholder_loading1)
+                    .error(R.drawable.placeholder_error1)
                     .into(viewHolderProduct.cartProductImage);
 
         } else if (holder instanceof ViewHolderDiscount) {
@@ -198,7 +207,7 @@ public class CartRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         TextView cartProductDetails;
         CartProductItem cartProductItem;
 
-        public ViewHolderProduct(View itemView, final CartRecyclerInterface cartRecyclerInterface) {
+        public ViewHolderProduct(final View itemView, final CartRecyclerInterface cartRecyclerInterface) {
             super(itemView);
             cartProductImage = (ResizableImageView) itemView.findViewById(R.id.cart_product_image);
             cartProductQuantity = (TextView) itemView.findViewById(R.id.cart_product_quantity);
@@ -210,7 +219,25 @@ public class CartRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             deleteProduct.setOnClickListener(new OnSingleClickListener() {
                 @Override
                 public void onSingleClick(View v) {
-                    cartRecyclerInterface.onProductDelete(cartProductItem);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(itemView.getContext());
+                    builder.setTitle("Do you want to delete puja from cart!");
+                    builder.setMessage("Are you sure?");
+                    builder.setNegativeButton("NO",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog,
+                                                    int which) {
+
+                                }
+                            });
+                    builder.setPositiveButton("YES",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog,
+                                                    int which) {
+                                    cartRecyclerInterface.onProductDelete(cartProductItem);
+                                }
+                            });
+                    builder.show();
+
                 }
             });
             View updateProduct = itemView.findViewById(R.id.cart_product_update);

@@ -5,6 +5,7 @@ package com.teketys.templetickets.utils;
  */
 
 import android.app.Activity;
+import android.app.FragmentManager;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -16,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.provider.Browser;
 import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.DialogFragment;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.URLSpan;
@@ -30,6 +32,9 @@ import com.google.gson.GsonBuilder;
 import com.teketys.templetickets.R;
 import com.teketys.templetickets.entities.filtr.DeserializerFilters;
 import com.teketys.templetickets.entities.filtr.Filters;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
+
 import timber.log.Timber;
 
 public class Utils {

@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -37,6 +38,9 @@ import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.adapters.BannersRecyclerAdapter;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
+
 import timber.log.Timber;
 
 /**
@@ -163,18 +167,33 @@ public class BannersFragment extends Fragment {
                 new Response.Listener<BannersResponse>() {
                     @Override
                     public void onResponse(@NonNull BannersResponse response) {
-                        Timber.d("response: %s", response.toString());
-                        bannersRecyclerAdapter.addBanners(response.getRecords());
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                    if (progressDialog != null) progressDialog.cancel();
+                                }
+                            }
+                            else {
 
-                        if (bannersRecyclerAdapter.getItemCount() > 0) {
-                            emptyContent.setVisibility(View.INVISIBLE);
-                            bannersRecycler.setVisibility(View.VISIBLE);
-                        } else {
-                            emptyContent.setVisibility(View.VISIBLE);
-                            bannersRecycler.setVisibility(View.INVISIBLE);
+                                Timber.d("**********response: %s", response.toString());
+                                bannersRecyclerAdapter.addBanners(response.getRecords());
+
+                                if (bannersRecyclerAdapter.getItemCount() > 0) {
+                                    emptyContent.setVisibility(View.INVISIBLE);
+                                    bannersRecycler.setVisibility(View.VISIBLE);
+                                } else {
+                                    emptyContent.setVisibility(View.VISIBLE);
+                                    bannersRecycler.setVisibility(View.INVISIBLE);
+                                }
+                            }
+
+                            progressDialog.cancel();
                         }
-
-                        progressDialog.cancel();
+                        else
+                            Timber.d("Null response during loadBanners....");
                     }
                 }, new Response.ErrorListener() {
             @Override

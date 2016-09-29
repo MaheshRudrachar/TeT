@@ -5,12 +5,20 @@
                 android:layout_height="match_parent">
 
     <!-- Splash screen... change this later -->
-    <ImageView
+
+    <pl.droidsonroids.gif.GifTextView
         android:id="@+id/splash_intro_screen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/login_background1"
+        android:background="@drawable/login_background"
         android:contentDescription="@string/content_description_intro_screen"/>
+
+    <!-- <ImageView
+        android:id="@+id/splash_intro_screen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/login_background"
+        android:contentDescription="@string/content_description_intro_screen"/> -->
 
     <RelativeLayout
         android:id="@+id/splash_content"
@@ -19,12 +27,12 @@
         android:visibility="invisible"
         tools:visibility="visible">
 
-        <ImageView
+        <!-- <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:contentDescription="@string/content_description_background"
             android:scaleType="centerCrop"
-            android:src="@drawable/login_background1"/>
+            android:src="@drawable/login_background"/> -->
 
         <LinearLayout
             android:id="@+id/splash_content_no_connection"

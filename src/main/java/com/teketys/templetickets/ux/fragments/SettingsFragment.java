@@ -7,6 +7,7 @@ package com.teketys.templetickets.ux.fragments;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,6 +38,8 @@ import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
 import com.teketys.templetickets.ux.adapters.ShopSpinnerAdapter;
 import com.teketys.templetickets.ux.dialogs.LicensesDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 import com.teketys.templetickets.ux.dialogs.RestartDialogFragment;
 import timber.log.Timber;
 
@@ -86,8 +89,23 @@ public class SettingsFragment extends Fragment {
                 new Response.Listener<ShopMetaDataResponse>() {
                     @Override
                     public void onResponse(@NonNull ShopMetaDataResponse response) {
-                        Timber.d("Available shops response: %s", response.toString());
-                        setSpinShops(response.getShopMetaDataList());
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                    if (progressDialog != null) progressDialog.cancel();
+                                }
+                            }
+                            else {
+                                Timber.d("Available shops response: %s", response.toString());
+                                setSpinShops(response.getShopMetaDataList());
+                            }
+                        }
+                        else
+                            Timber.d("Null response during requestShops....");
+
                         if (progressDialog != null) progressDialog.cancel();
                     }
                 }, new Response.ErrorListener() {
@@ -120,9 +138,23 @@ public class SettingsFragment extends Fragment {
                     new Response.Listener<ShopResponse>() {
                         @Override
                         public void onResponse(@NonNull ShopResponse response) {
-                            Timber.d("Get shops response: %s", response.toString());
-                            shopList.add(response.getShop());
-                            setSpinShopDetails(shopList);
+                            if(response != null) {
+                                if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                    if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                        LoginDialogFragment.logoutUser(true);
+                                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                        if (progressDialog != null) progressDialog.cancel();
+                                    }
+                                }
+                                else {
+                                    Timber.d("Get shops response: %s", response.toString());
+                                    shopList.add(response.getShop());
+                                    setSpinShopDetails(shopList);
+                                }
+                            }
+                            else
+                                Timber.d("Null response during setSpinShops....");
                         }
                     }, new Response.ErrorListener() {
                 @Override

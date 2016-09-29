@@ -200,7 +200,7 @@ public class CCAvenueFragment extends Fragment {
                         status = "Transaction Declined!";
                     }else if(html.indexOf("Success")!=-1){
                         status = "Transaction Successful!";
-                        DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(true);
+                        DialogFragment thankYouDF = OrderCreateSuccessDialogFragment.newInstance(true, true);
                         thankYouDF.show(getFragmentManager(), OrderCreateSuccessDialogFragment.class.getSimpleName());
                     }else if(html.indexOf("Aborted")!=-1){
                         status = "Transaction Cancelled!";

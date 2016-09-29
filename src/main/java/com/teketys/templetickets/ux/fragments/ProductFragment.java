@@ -5,6 +5,7 @@ package com.teketys.templetickets.ux.fragments;
  */
 
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -23,6 +24,7 @@ import android.text.Html;
 import android.text.format.DateFormat;
 import android.text.method.LinkMovementMethod;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +38,7 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -46,12 +49,15 @@ import com.facebook.share.widget.MessageDialog;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
+import com.squareup.timessquare.CalendarPickerView;
 import com.teketys.templetickets.BuildConfig;
 import com.teketys.templetickets.CONST;
 import com.teketys.templetickets.MyApplication;
@@ -61,6 +67,8 @@ import com.teketys.templetickets.api.EndPoints;
 import com.teketys.templetickets.api.GsonRequest;
 import com.teketys.templetickets.api.JsonRequest;
 import com.teketys.templetickets.entities.User;
+import com.teketys.templetickets.entities.cart.CartProductItem;
+import com.teketys.templetickets.entities.cart.CartResponse;
 import com.teketys.templetickets.entities.product.Product;
 import com.teketys.templetickets.entities.product.ProductAttributeGroups;
 import com.teketys.templetickets.entities.product.ProductAttributes;
@@ -101,6 +109,8 @@ import com.wdullaer.materialdatetimepicker.time.TimePickerDialog;
 import mbanje.kurt.fabbutton.FabButton;
 import timber.log.Timber;
 
+import static android.widget.Toast.LENGTH_SHORT;
+
 /**
  * Fragment shows a detail of the product.
  */
@@ -123,6 +133,16 @@ public class ProductFragment extends Fragment {
     private TextView productPriceDiscountPercentTv;
 
     /**
+     * Datetime Picker variables
+     */
+    private static final String TAG = "SampleTimesSquareActivi";
+    private CalendarPickerView calendar;
+    private android.app.AlertDialog theDialog;
+    private CalendarPickerView dialogView;
+    Calendar nextYear;
+    Calendar lastYear;
+
+    /**
      * Refers to the displayed product.
      */
     private Product product;
@@ -140,6 +160,7 @@ public class ProductFragment extends Fragment {
      */
     private Spinner colorSpinner;
     private Spinner timeSpinner;
+    private Spinner sizeSpinner;
     private TextView bookingDateTv;
 
     private SizeVariantSpinnerAdapter sizeVariantSpinnerAdapter;
@@ -206,6 +227,8 @@ public class ProductFragment extends Fragment {
         timeSpinner = (Spinner) view.findViewById(R.id.product_time_spinner);
         bookingDateTv = (TextView) view.findViewById(R.id.product_bookingdate_tv);
 
+        //dialogView = (CalendarPickerView) getActivity().getLayoutInflater().inflate(R.layout.dialog_datepicker, null, false);
+
         prepareSizeSpinner(view);
         prepareTimeSpinner(view);
 
@@ -219,8 +242,19 @@ public class ProductFragment extends Fragment {
     }
 
     private void prepareTimeSpinner(View view) {
+
+        ArrayList<ProductTime> productTimes = new ArrayList<>();
+        timeSpinner.setVisibility(View.VISIBLE);
+
+        ProductTime pt = new ProductTime();
+        pt.setProduct_option_id(CONST.DEFAULT_EMPTY_ID);
+        pt.setProduct_option_value_id(CONST.DEFAULT_EMPTY_ID);
+        pt.setName(getString(R.string.Select_time));
+
+        productTimes.add(0, pt);
         cartTimeTextSpinnerAdapter = new CartTimeTextSpinnerAdapter(getActivity());
         cartTimeTextSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        cartTimeTextSpinnerAdapter.setProductTimeList(productTimes);
         timeSpinner.setAdapter(cartTimeTextSpinnerAdapter);
         timeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 
@@ -255,7 +289,7 @@ public class ProductFragment extends Fragment {
      * @param view fragment base view.
      */
     private void prepareSizeSpinner(View view) {
-        Spinner sizeSpinner = (Spinner) view.findViewById(R.id.product_size_spinner);
+        sizeSpinner = (Spinner) view.findViewById(R.id.product_size_spinner);
         sizeVariantSpinnerAdapter = new SizeVariantSpinnerAdapter(getActivity());
         sizeVariantSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sizeSpinner.setAdapter(sizeVariantSpinnerAdapter);
@@ -300,7 +334,8 @@ public class ProductFragment extends Fragment {
         addToCart.setOnClickListener(new OnSingleClickListener() {
             @Override
             public void onSingleClick(View v) {
-                postProductToCart();
+                validateProductB4Adding();
+                //postProductToCart();
             }
         });
 
@@ -341,6 +376,59 @@ public class ProductFragment extends Fragment {
             }
         });
 
+        /*final Calendar nextYear = Calendar.getInstance();
+        nextYear.add(Calendar.MONTH, 2);
+
+        final Calendar lastYear = Calendar.getInstance();
+        lastYear.add(Calendar.MONTH, 0);
+
+        Button bookingTicketBtn = (Button) view.findViewById(R.id.product_bookingdate_btn);
+        bookingTicketBtn.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                String title = "I'm a dialog!";
+                showCalendarInDialog(title, R.layout.dialog_datepicker);
+                dialogView.init(lastYear.getTime(), nextYear.getTime()) //
+                        .withSelectedDate(new Date())
+                        .inMode(CalendarPickerView.SelectionMode.SINGLE);
+
+                final Calendar cal=Calendar.getInstance();
+
+                dialogView.setDateSelectableFilter(new CalendarPickerView.DateSelectableFilter() {
+                    @Override
+                    public boolean isDateSelectable(Date date) {
+                        boolean isSelecteable=true;
+                        cal.setTime(date);
+                        int dayOfWeek=cal.get(Calendar.DAY_OF_WEEK);
+
+                        //disable if weekend
+                        if(dayOfWeek==Calendar.SATURDAY || dayOfWeek==Calendar.SUNDAY){
+                            isSelecteable=false;
+                        }
+                        return isSelecteable;
+                    }
+                });
+
+                dialogView.setOnDateSelectedListener(new CalendarPickerView.OnDateSelectedListener() {
+
+                    @Override
+                    public void onDateUnselected(Date date) {
+
+                    }
+
+                    @Override
+                    public void onDateSelected(Date date) {
+
+                        //Toast.makeText(getContext(), dialogView.getSelectedDate().getTime() + "", Toast.LENGTH_LONG).show();
+                        String toast = "Selected: " + SimpleDateFormat.getDateInstance().format(dialogView.getSelectedDate().getTime());
+
+                        Toast.makeText(getActivity(), toast, LENGTH_SHORT).show();
+                        bookingDateTv.setText("Pickup Date:" + SimpleDateFormat.getDateInstance().format(dialogView.getSelectedDate().getTime()));
+                    }
+                });
+            }
+        });
+*/
+
         //Booking Calendar Option
         Button bookingTicketBtn = (Button) view.findViewById(R.id.product_bookingdate_btn);
         bookingTicketBtn.setOnClickListener(new View.OnClickListener() {
@@ -359,7 +447,12 @@ public class ProductFragment extends Fragment {
                             public void onDateSet(DatePickerDialog datePickerDialog, int i, int i1, int i2) {
                                 now.set(i, i1, i2);
                                 TextView tv = (TextView) view.findViewById(R.id.product_bookingdate_tv);
-                                tv.setText(SimpleDateFormat.getDateInstance().format(now.getTime()));
+                                if(SimpleDateFormat.getDateInstance().format(now.getTime()).equals(SimpleDateFormat.getDateInstance().format(Calendar.getInstance().getTime()))) {
+                                    MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_NO_CURRENT_BOOKING_DATE, null, MsgUtils.ToastLength.LONG);
+                                    return;
+                                }
+                                else
+                                    tv.setText(SimpleDateFormat.getDateInstance().format(now.getTime()));
                             }
                         },
                         now.get(Calendar.YEAR),
@@ -372,6 +465,21 @@ public class ProductFragment extends Fragment {
                 //dpd.setAccentColor(Color.parseColor("#9C27B0"));
                 dpd.setTitle("Booking Date");
 
+                //***********************
+                //Limit Dates
+                //***********************
+
+                dpd.setMinDate(now);
+
+                /*ArrayList<Calendar> lDates = new ArrayList();
+                for (int i = 0; i <= 2; i++) {
+                    Calendar date = Calendar.getInstance();
+                    date.add(Calendar.MONTH, i);
+                    lDates.add(date);
+                }
+
+                Calendar[] lCalendarArray = lDates.toArray(new Calendar[lDates.size()]);
+                dpd.setSelectableDays(lCalendarArray);*/
 
                 //***********************
                 //Disable Advanced Booking Dates
@@ -387,17 +495,6 @@ public class ProductFragment extends Fragment {
                             else
                                 advancedBookingDays = 1;
                         }
-
-                        /*if (pa.getName().toLowerCase().equals(CONST.OPTION_ATTRIBUTE_DAILY)) {
-                            advancedBookingDays = 1;
-                        }
-
-                        if (pa.getName().toLowerCase().equals(CONST.OPTION_ATTRIBUTE_SPECIFIC)) {
-                            if (pa.getText() != null || pa.getText() != "")
-                                advancedBookingDays = Integer.valueOf(pa.getText());
-                            else
-                                advancedBookingDays = 1;
-                        }*/
                     }
                 }
 
@@ -408,26 +505,39 @@ public class ProductFragment extends Fragment {
                     bDates.add(date);
                 }
 
+                /*Calendar currentDate = Calendar.getInstance();
+                currentDate.add(Calendar.DAY_OF_MONTH, 0);
+                bDates.add(0, currentDate);*/
+
                 Calendar[] calendarArray = bDates.toArray(new Calendar[bDates.size()]);
                 dpd.setDisabledDays(calendarArray);
 
-                //***********************
-                //Limit Dates
-                //***********************
-
-                ArrayList<Calendar> lDates = new ArrayList();
-                for (int i = -6; i <= 6; i++) {
-                    Calendar date = Calendar.getInstance();
-                    date.add(Calendar.MONTH, i);
-                    lDates.add(date);
-                }
-
-                Calendar[] lCalendarArray = lDates.toArray(new Calendar[lDates.size()]);
-                dpd.setSelectableDays(lCalendarArray);
-
                 dpd.show(getActivity().getFragmentManager(), "Date Picker");
+
+                if(bookingDateTv.getText() != null || bookingDateTv.getText() != "")
+                    upateTimeSpinner(selectedProduct);
             }
         });
+    }
+
+    private void showCalendarInDialog(String title, int layoutResId) {
+        //dialogView = (CalendarPickerView) getActivity().getLayoutInflater().inflate(layoutResId, null, false);
+        theDialog = new android.app.AlertDialog.Builder(getContext()) //
+                .setTitle(title)
+                .setView(dialogView)
+                .setNeutralButton("Dismiss", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .create();
+        theDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override public void onShow(DialogInterface dialogInterface) {
+                Log.d(TAG, "onShow: fix the dimens!");
+                dialogView.fixDialogDimens();
+            }
+        });
+        theDialog.show();
     }
 
     /**
@@ -539,16 +649,29 @@ public class ProductFragment extends Fragment {
                 new Response.Listener<ProductResponse>() {
                     @Override
                     public void onResponse(@NonNull ProductResponse response) {
-                        MainActivity.setActionBarTitle(response.getProduct().getName());
-                        if (response.getProduct().getVariants() != null && response.getProduct().getVariants().size() > 0) {
-                            getWishListInfo(productId);
-                            selectedProduct = response.getProduct();
-                        }
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                }
+                            }
+                            else {
+                                MainActivity.setActionBarTitle(response.getProduct().getName());
+                                if (response.getProduct().getVariants() != null && response.getProduct().getVariants().size() > 0) {
+                                    getWishListInfo(productId);
+                                    selectedProduct = response.getProduct();
+                                }
 
-                        //Changed the response.getRelated() to productId
-                        addRecommendedProducts(productId);
-                        refreshScreenData(response.getProduct());
-                        setContentVisible(CONST.VISIBLE.CONTENT);
+                                //Changed the response.getRelated() to productId
+                                addRecommendedProducts(productId);
+                                refreshScreenData(response.getProduct());
+                                setContentVisible(CONST.VISIBLE.CONTENT);
+                            }
+                        }
+                        else
+                            Timber.d("Null response during getProduct....");
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -578,7 +701,19 @@ public class ProductFragment extends Fragment {
             GsonRequest<WishlistResponse> getWishlistInfo = new GsonRequest<WishlistResponse>(Request.Method.GET, wishlistUrl, null, WishlistResponse.class, new Response.Listener<WishlistResponse>() {
                 @Override
                 public void onResponse(@NonNull WishlistResponse response) {
-                    prepareWishListButton(response, productId);
+                    if(response != null) {
+                        if(response.getStatusText() != null && response.getStatusCode() != null) {
+                            if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                LoginDialogFragment.logoutUser(true);
+                                DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                            }
+                        }
+                        else
+                            prepareWishListButton(response, productId);
+                    }
+                    else
+                        Timber.d("returned null response during getWishListInfo");
                 }
             }, new Response.ErrorListener() {
                 @Override
@@ -592,58 +727,97 @@ public class ProductFragment extends Fragment {
         }
     }
 
-    private void prepareWishListButton(WishlistResponse response, long productId) {
+    private void prepareWishListButton(WishlistResponse response, final long productId) {
 
-        if(response.getProducts() != null) {
-            if (response.getProducts().size() > 0) {
-                // Load response data, if exist
+        if(response != null) {
+            if (response.getWishlistRecords().getProducts() != null) {
+                if (response.getWishlistRecords().getProducts().size() > 0) {
+                    // Load response data, if exist
 
-                try {
+                    try {
 
-                    for (WishlistItem item : response.getProducts()) {
-                        if (item.getId() == productId) {
-                            inWishlist = true;
-                            break;
+                        for (WishlistItem item : response.getWishlistRecords().getProducts()) {
+                            if (item.getId() == productId) {
+                                inWishlist = true;
+                                break;
+                            }
                         }
+
+                        if (!inWishlist)
+                            wishlistId = CONST.DEFAULT_EMPTY_ID;
+                        else wishlistId = productId;
+                    } catch (Exception e) {
+                        Timber.e(e, "Wishlist info parse exception");
+                        return;
                     }
 
-                    if (!inWishlist)
-                        wishlistId = CONST.DEFAULT_EMPTY_ID;
-                    else wishlistId = productId;
-                } catch (Exception e) {
-                    Timber.e(e, "Wishlist info parse exception");
-                    return;
-                }
+                    // Check data consistence
+                    if (inWishlist && wishlistId == CONST.DEFAULT_EMPTY_ID) {
+                        Timber.e("Inconsistent data in is_in_wishlist response");
+                    } else {
+                        if (inWishlist)
+                            wishlistButton.setIcon(R.drawable.wish_list_pressed, R.drawable.wish_list);
+                        else
+                            wishlistButton.setIcon(R.drawable.wish_list, R.drawable.wish_list_pressed);
 
-                // Check data consistence
-                if (inWishlist && wishlistId == CONST.DEFAULT_EMPTY_ID) {
-                    Timber.e("Inconsistent data in is_in_wishlist response");
-                } else {
-                    if (inWishlist)
-                        wishlistButton.setIcon(R.drawable.wish_list_pressed, R.drawable.wish_list);
-                    else wishlistButton.setIcon(R.drawable.wish_list, R.drawable.wish_list_pressed);
+                        wishlistButton.setVisibility(View.VISIBLE);
+                        wishlistButton.setOnClickListener(new View.OnClickListener() {
+                            private boolean running = false;
 
-                    wishlistButton.setVisibility(View.VISIBLE);
-                    wishlistButton.setOnClickListener(new View.OnClickListener() {
-                        private boolean running = false;
+                            @Override
+                            public void onClick(View v) {
+                                if (!running) {
+                                    running = true;
+                                    User user = SettingsMy.getActiveUser();
+                                    if (user != null) {
+                                        if (inWishlist) {
+                                            inWishlist = false;
+                                            wishlistButton.setIcon(R.drawable.wish_list_pressed, R.drawable.wish_list);
+                                            wishlistButton.showProgress(true);
+                                            if (wishlistId != CONST.DEFAULT_EMPTY_ID) {
+                                                WishlistFragment.removeFromWishList(getActivity(), wishlistId, user, CONST.PRODUCT_REQUESTS_TAG, new RequestListener() {
+                                                    @Override
+                                                    public void requestSuccess(long newWishlistId) {
+                                                        running = false;
+                                                        wishlistButton.onProgressCompleted();
+                                                        wishlistId = CONST.DEFAULT_EMPTY_ID;
+                                                    }
 
-                        @Override
-                        public void onClick(View v) {
-                            if (!running) {
-                                running = true;
-                                User user = SettingsMy.getActiveUser();
-                                if (user != null) {
-                                    if (inWishlist) {
-                                        inWishlist = false;
-                                        wishlistButton.setIcon(R.drawable.wish_list_pressed, R.drawable.wish_list);
-                                        wishlistButton.showProgress(true);
-                                        if (wishlistId != CONST.DEFAULT_EMPTY_ID) {
-                                            WishlistFragment.removeFromWishList(getActivity(), wishlistId, user, CONST.PRODUCT_REQUESTS_TAG, new RequestListener() {
+                                                    @Override
+                                                    public void requestFailed(VolleyError error) {
+                                                        running = false;
+                                                        wishlistButton.showProgress(false);
+                                                    }
+                                                });
+                                            } else {
+                                                running = false;
+                                                wishlistButton.showProgress(false);
+                                                Timber.e(new RuntimeException(), "Trying remove product from wishlist with error consta");
+                                            }
+                                        } else {
+                                            inWishlist = true;
+                                            wishlistButton.setIcon(R.drawable.wish_list, R.drawable.wish_list_pressed);
+                                            wishlistButton.showProgress(true);
+                                            WishlistFragment.addToWishList(getActivity(), productId, user, CONST.PRODUCT_REQUESTS_TAG, new RequestListener() {
                                                 @Override
                                                 public void requestSuccess(long newWishlistId) {
                                                     running = false;
                                                     wishlistButton.onProgressCompleted();
-                                                    wishlistId = CONST.DEFAULT_EMPTY_ID;
+                                                    wishlistId = newWishlistId;
+
+                                                    String result = getString(R.string.Product_added_to_wishlist);
+                                                    Snackbar snackbar = Snackbar.make(productContainer, result, Snackbar.LENGTH_LONG)
+                                                            .setActionTextColor(ContextCompat.getColor(getActivity(), R.color.colorAccent))
+                                                            .setAction(R.string.Go_to_wishlist, new View.OnClickListener() {
+                                                                @Override
+                                                                public void onClick(View v) {
+                                                                    if (getActivity() instanceof MainActivity)
+                                                                        ((MainActivity) getActivity()).onWishlistSelected();
+                                                                }
+                                                            });
+                                                    TextView textView = (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+                                                    textView.setTextColor(Color.WHITE);
+                                                    snackbar.show();
                                                 }
 
                                                 @Override
@@ -652,57 +826,109 @@ public class ProductFragment extends Fragment {
                                                     wishlistButton.showProgress(false);
                                                 }
                                             });
-                                        } else {
-                                            running = false;
-                                            wishlistButton.showProgress(false);
-                                            Timber.e(new RuntimeException(), "Trying remove product from wishlist with error consta");
                                         }
                                     } else {
-                                        inWishlist = true;
-                                        wishlistButton.setIcon(R.drawable.wish_list, R.drawable.wish_list_pressed);
-                                        wishlistButton.showProgress(true);
-                                        WishlistFragment.addToWishList(getActivity(), /*product.getVariants().get(0).getId()*/0, user, CONST.PRODUCT_REQUESTS_TAG, new RequestListener() {
-                                            @Override
-                                            public void requestSuccess(long newWishlistId) {
-                                                running = false;
-                                                wishlistButton.onProgressCompleted();
-                                                wishlistId = newWishlistId;
-
-                                                String result = getString(R.string.Product_added_to_wishlist);
-                                                Snackbar snackbar = Snackbar.make(productContainer, result, Snackbar.LENGTH_LONG)
-                                                        .setActionTextColor(ContextCompat.getColor(getActivity(), R.color.colorAccent))
-                                                        .setAction(R.string.Go_to_wishlist, new View.OnClickListener() {
-                                                            @Override
-                                                            public void onClick(View v) {
-                                                                if (getActivity() instanceof MainActivity)
-                                                                    ((MainActivity) getActivity()).onWishlistSelected();
-                                                            }
-                                                        });
-                                                TextView textView = (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
-                                                textView.setTextColor(Color.WHITE);
-                                                snackbar.show();
-                                            }
-
-                                            @Override
-                                            public void requestFailed(VolleyError error) {
-                                                running = false;
-                                                wishlistButton.showProgress(false);
-                                            }
-                                        });
+                                        running = false;
+                                        LoginExpiredDialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getFragmentManager(), "loginExpiredDialogFragment");
                                     }
-                                } else {
-                                    running = false;
-                                    LoginExpiredDialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
-                                    loginExpiredDialogFragment.show(getFragmentManager(), "loginExpiredDialogFragment");
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
+                } else {
+                    Timber.e("Missing wishlist data: %s", response);
+                    rePrepareWishlistButton(productId);
                 }
             } else {
-                Timber.e("Missing is_in_wishlist data: %s", response);
+                Timber.e("Missing wishlist data: %s", response);
+                rePrepareWishlistButton(productId);
             }
         }
+        else
+            Timber.d("Null response during prepareWishListButton....");
+    }
+
+    private void rePrepareWishlistButton(final long productId) {
+        inWishlist = false;
+        wishlistButton.setIcon(R.drawable.wish_list, R.drawable.wish_list_pressed);
+
+        wishlistButton.setVisibility(View.VISIBLE);
+        wishlistButton.setOnClickListener(new View.OnClickListener() {
+            private boolean running = false;
+
+            @Override
+            public void onClick(View v) {
+                if (!running) {
+                    running = true;
+                    User user = SettingsMy.getActiveUser();
+                    if (user != null) {
+                        if (inWishlist) {
+                            wishlistId = productId;
+                            inWishlist = false;
+                            wishlistButton.setIcon(R.drawable.wish_list_pressed, R.drawable.wish_list);
+                            wishlistButton.showProgress(true);
+                            if (wishlistId != CONST.DEFAULT_EMPTY_ID) {
+                                WishlistFragment.removeFromWishList(getActivity(), wishlistId, user, CONST.PRODUCT_REQUESTS_TAG, new RequestListener() {
+                                    @Override
+                                    public void requestSuccess(long newWishlistId) {
+                                        running = false;
+                                        wishlistButton.onProgressCompleted();
+                                        wishlistId = CONST.DEFAULT_EMPTY_ID;
+                                    }
+
+                                    @Override
+                                    public void requestFailed(VolleyError error) {
+                                        running = false;
+                                        wishlistButton.showProgress(false);
+                                    }
+                                });
+                            } else {
+                                running = false;
+                                wishlistButton.showProgress(false);
+                                Timber.e(new RuntimeException(), "Trying remove product from wishlist with error consta");
+                            }
+                        } else {
+                            inWishlist = true;
+                            wishlistButton.setIcon(R.drawable.wish_list, R.drawable.wish_list_pressed);
+                            wishlistButton.showProgress(true);
+                            WishlistFragment.addToWishList(getActivity(), productId, user, CONST.PRODUCT_REQUESTS_TAG, new RequestListener() {
+                                @Override
+                                public void requestSuccess(long newWishlistId) {
+                                    running = false;
+                                    wishlistButton.onProgressCompleted();
+                                    wishlistId = newWishlistId;
+
+                                    String result = getString(R.string.Product_added_to_wishlist);
+                                    Snackbar snackbar = Snackbar.make(productContainer, result, Snackbar.LENGTH_LONG)
+                                            .setActionTextColor(ContextCompat.getColor(getActivity(), R.color.colorAccent))
+                                            .setAction(R.string.Go_to_wishlist, new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(View v) {
+                                                    if (getActivity() instanceof MainActivity)
+                                                        ((MainActivity) getActivity()).onWishlistSelected();
+                                                }
+                                            });
+                                    TextView textView = (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+                                    textView.setTextColor(Color.WHITE);
+                                    snackbar.show();
+                                }
+
+                                @Override
+                                public void requestFailed(VolleyError error) {
+                                    running = false;
+                                    wishlistButton.showProgress(false);
+                                }
+                            });
+                        }
+                    } else {
+                        running = false;
+                        LoginExpiredDialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                        loginExpiredDialogFragment.show(getFragmentManager(), "loginExpiredDialogFragment");
+                    }
+                }
+            }
+        });
     }
 
     private void refreshScreenData(Product product) {
@@ -726,18 +952,21 @@ public class ProductFragment extends Fragment {
             // Determine if product is on sale
             double pr = product.getPrice();
             double dis = product.getSpecialPrice();
+            productPriceTv.setVisibility(View.VISIBLE);
+            productPriceTv.setText(String.valueOf(product.getPrice()));
+
             /*if (pr == dis || Math.abs(pr - dis) / Math.max(Math.abs(pr), Math.abs(dis)) < 0.000001) {
                 productPriceDiscountTv.setText(product.getDiscountPriceFormatted());
                 productPriceDiscountTv.setTextColor(ContextCompat.getColor(getContext(), R.color.textPrimary));
                 productPriceTv.setVisibility(View.GONE);
                 productPriceDiscountPercentTv.setVisibility(View.GONE);
             } else {*/
-                productPriceDiscountTv.setText(product.getDiscountPriceFormatted());
+                /*productPriceDiscountTv.setText(product.getDiscountPriceFormatted());
                 productPriceDiscountTv.setTextColor(ContextCompat.getColor(getContext(), R.color.colorAccent));
                 productPriceTv.setVisibility(View.VISIBLE);
                 productPriceTv.setText(product.getPriceFormatted());
                 productPriceTv.setPaintFlags(Paint.STRIKE_THRU_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
-                productPriceDiscountPercentTv.setVisibility(View.VISIBLE);
+                productPriceDiscountPercentTv.setVisibility(View.VISIBLE);*/
                 //productPriceDiscountPercentTv.setText(Utils.calculateDiscountPercent(getContext(), pr, dis));
             //}
             if (product.getDescription() != null) {
@@ -809,74 +1038,101 @@ public class ProductFragment extends Fragment {
                 }
             }
 
-            //**************************************
-            // Set Time Spinner
-            //**************************************
-            List<ProductTime> productTimes = new ArrayList<>();
+            if (productColors.size() == 0) {
+                updateOnlyImagesAndRelated(selectedProduct);
+            }
 
-            for (ProductVariant pv : product.getVariants()) {
-                if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
 
-                    for(ProductVariantValues pvv : pv.getProductVariantValues()) {
-                        ProductTime pat = new ProductTime(pvv.getProduct_option_value_id());
-                        pat.setName(pvv.getName());
-                        pat.setProduct_option_value_id(pvv.getProduct_option_value_id());
-                        pat.setQuantity(pvv.getQuantity());
-                        pat.setImage(pvv.getImage());
+        } else {
+            Timber.e("Setting spinners for null product variants.");
+        }
+    }
 
-                        if (!productTimes.contains(pat)) {
-                            productTimes.add(pat);
-                        }
+    private void upateTimeSpinner(Product product) {
+        //**************************************
+        // Set Time Spinner
+        //**************************************
+        List<ProductTime> productTimes = new ArrayList<>();
+
+        for (ProductVariant pv : product.getVariants()) {
+            if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
+
+                for(ProductVariantValues pvv : pv.getProductVariantValues()) {
+                    ProductTime pat = new ProductTime(pvv.getProduct_option_value_id());
+                    pat.setName(pvv.getName());
+                    pat.setProduct_option_value_id(pvv.getProduct_option_value_id());
+                    pat.setQuantity(pvv.getQuantity());
+                    pat.setImage(pvv.getImage());
+
+                    if (!productTimes.contains(pat)) {
+                        productTimes.add(pat);
                     }
                 }
             }
+        }
 
-            if (productTimes.size() > 0) {
-                timeSpinner.setVisibility(View.VISIBLE);
+        if (productTimes.size() > 1) {
+            timeSpinner.setVisibility(View.VISIBLE);
 
-                ProductTime pt = new ProductTime();
-                pt.setProduct_option_id(CONST.DEFAULT_EMPTY_ID);
-                pt.setProduct_option_value_id(CONST.DEFAULT_EMPTY_ID);
-                pt.setName(getString(R.string.Select_time));
+            ProductTime pt = new ProductTime();
+            pt.setProduct_option_id(CONST.DEFAULT_EMPTY_ID);
+            pt.setProduct_option_value_id(CONST.DEFAULT_EMPTY_ID);
+            pt.setName(getString(R.string.Select_time));
 
-                productTimes.add(0, pt);
+            productTimes.add(0, pt);
 
-                CartTimeTextSpinnerAdapter timeSpinnerAdapter = new CartTimeTextSpinnerAdapter(getActivity());
-                timeSpinnerAdapter.setProductTimeList(productTimes);
-                timeSpinner.setAdapter(timeSpinnerAdapter);
-                timeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        ProductTime productTime = (ProductTime) parent.getItemAtPosition(position);
-                        if (productTime != null) {
-                            selectedProductTime = productTime;
-                            Timber.d("TimePicker selected time: %s", productTime.toString());
-                            //updateDateAndTimeSpinner(productTime);
-                        } else {
-                            selectedProductTime = null;
-                            Timber.e("Retrieved null time from spinner.");
-                        }
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parent) {
+            CartTimeTextSpinnerAdapter timeSpinnerAdapter = new CartTimeTextSpinnerAdapter(getActivity());
+            timeSpinnerAdapter.setProductTimeList(productTimes);
+            timeSpinner.setAdapter(timeSpinnerAdapter);
+            timeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    ProductTime productTime = (ProductTime) parent.getItemAtPosition(position);
+                    if (productTime != null) {
+                        selectedProductTime = productTime;
+                        Timber.d("TimePicker selected time: %s", productTime.toString());
+                    } else {
                         selectedProductTime = null;
-                        Timber.d("Nothing selected in product time spinner.");
+                        Timber.e("Retrieved null time from spinner.");
                     }
-                });
-            } else {
-                timeSpinner.setVisibility(View.GONE);
-                selectedProductTime = null;
-                Timber.e("Setting timers spinners for null product variants.");
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    selectedProductTime = null;
+                    Timber.d("Nothing selected in product time spinner.");
+                }
+            });
+        } else {
+            timeSpinner.setVisibility(View.GONE);
+            selectedProductTime = null;
+            Timber.e("Setting timers spinners for null product variants.");
                 /*for (ProductVariant pv : product.getVariants()) {
                     if (pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
                         timeSpinner.setVisibility(View.GONE);
                         updateDateAndTimeSpinner(productTimes.get(0));
                     }
                 }*/
+        }
+    }
+
+    private void updateOnlyImagesAndRelated(Product product) {
+        if(product != null) {
+            productImagesUrls = new ArrayList<>();
+
+            if (!(productImagesUrls.contains(selectedProduct.getMainImage()))) {
+                productImagesUrls.add(selectedProduct.getMainImage());
+                productImagesUrls.add(selectedProduct.getMainImage());
+                Timber.d("getAvailableSizesForColor images[] == null, setMain_image()");
             }
-        } else {
-            Timber.e("Setting spinners for null product variants.");
+
+            // Show related products
+            if (productImagesAdapter != null) {
+                productImagesAdapter.clearAll();
+                for (String url : productImagesUrls) {
+                    productImagesAdapter.addLast(url);
+                }
+            }
         }
     }
 
@@ -920,6 +1176,7 @@ public class ProductFragment extends Fragment {
 
             // Show sizes
             if (variantSizeArrayList.size() > 1) {
+                sizeSpinner.setVisibility(View.VISIBLE);
                 ProductSize ps = new ProductSize();
                 ps.setProduct_option_id(CONST.DEFAULT_EMPTY_ID);
                 ps.setProduct_option_value_id(CONST.DEFAULT_EMPTY_ID);
@@ -927,7 +1184,11 @@ public class ProductFragment extends Fragment {
 
                 variantSizeArrayList.add(0, ps);
             }
-            sizeVariantSpinnerAdapter.setProductSizeList(variantSizeArrayList);
+            else {
+                sizeSpinner.setVisibility(View.GONE);
+                selectedProductSize = null;
+                Timber.e("Setting size spinners for null product variants.");
+            }
 
             // Show related products
             if (productImagesAdapter != null) {
@@ -950,7 +1211,19 @@ public class ProductFragment extends Fragment {
                     @Override
                     public void onResponse(@NonNull ProductRelatedResponse response) {
                         //MainActivity.setActionBarTitle(response.getName());
-                        prepareRecommendedProducts(response.getItems());
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                }
+                            }
+                            else
+                                prepareRecommendedProducts(response.getItems());
+                        }
+                        else
+                            Timber.d("Null response during addRecommendedProducts....");
 
                     }
                 }, new Response.ErrorListener() {
@@ -976,9 +1249,65 @@ public class ProductFragment extends Fragment {
         }
     }
 
+    private void validateProductB4Adding() {
+        String url = String.format(EndPoints.CART);
+        GsonRequest<CartResponse> getCartResponse = new GsonRequest<CartResponse>(Request.Method.GET, url, null, CartResponse.class, new Response.Listener<CartResponse>() {
+            @Override
+            public void onResponse(@NonNull CartResponse response) {
+                if(response != null) {
+                    if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                        LoginDialogFragment.logoutUser(true);
+                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                        loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                    }
+                    else {
+                        Timber.d("Validating Cart: %s", response.toString());
+                        if (response.getCart() != null) {
+                            if(response.getCart().getItems() != null) {
+                                if(response.getCart().getItems().size() > 0) {
+                                    if(response.getCart().getItems().get(0).getModel().toLowerCase().equals(selectedProduct.getModel().toLowerCase())) {
+                                        Timber.d("Valid product...");
+                                        postProductToCart();
+                                    }
+                                    else {
+                                        Timber.d("Invalid product, select pujas from same temple!");
+                                        MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_MESSAGE, CONST.RESPONSE_INVALID_PRODUCT, MsgUtils.ToastLength.LONG);
+                                        return;
+                                    }
+                                }
+                                else {
+                                    Timber.d("Initial fresh product...");
+                                    postProductToCart();
+                                }
+                            }
+                            else {
+                                Timber.d("Initial fresh product...");
+                                postProductToCart();
+                            }
+                        }
+                        else {
+                            Timber.d("Initial fresh product...");
+                            postProductToCart();
+                        }
+                    }
+                }
+                else
+                    Timber.d("Null response during getCartResponse....");
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Timber.e(error, "Obtain cart from response failed.");
+            }
+        }, getFragmentManager(), "");
+        getCartResponse.setRetryPolicy(MyApplication.getDefaultRetryPolice());
+        getCartResponse.setShouldCache(false);
+        MyApplication.getInstance().addToRequestQueue(getCartResponse, CONST.CART_REQUESTS_TAG);
+    }
+
     private void postProductToCart() {
-        if (selectedProductSize == null || selectedProductSize.getName() == null || selectedProductSize.getName() == getString(R.string.Select_size) ||
-                (selectedProduct.getId() == CONST.DEFAULT_EMPTY_ID && selectedProductSize.getProduct_option_id() == CONST.DEFAULT_EMPTY_ID)) {
+        if ((selectedProductSize == null || selectedProductSize.getName() == null || selectedProductSize.getName() == getString(R.string.Select_size) ||
+                selectedProductSize.getProduct_option_id() == CONST.DEFAULT_EMPTY_ID) && (sizeSpinner.getVisibility() == View.VISIBLE)) {
             MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_NO_SIZE_SELECTED, null, MsgUtils.ToastLength.SHORT);
             return;
         }
@@ -1008,30 +1337,34 @@ public class ProductFragment extends Fragment {
                 JSONObject optionSize = new JSONObject();
 
                 for (ProductVariant pv : selectedProduct.getVariants()) {
-                    if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_COLOR)) {
+                    if (pv.getName().toLowerCase().equals(CONST.OPTION_NAME_COLOR)) {
                         colorID = pv.getProductOptionId();
                     }
 
-                    if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_SIZE)) {
+                    if (pv.getName().toLowerCase().equals(CONST.OPTION_NAME_SIZE)) {
                         sizeID = pv.getProductOptionId();
                     }
 
-                    if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
+                    if (pv.getName().toLowerCase().equals(CONST.OPTION_NAME_TIME)) {
                         timeID = pv.getProductOptionId();
                     }
 
-                    if(pv.getName().toLowerCase().equals(CONST.OPTION_NAME_DATE)) {
+                    if (pv.getName().toLowerCase().equals(CONST.OPTION_NAME_DATE)) {
                         dateID = pv.getProductOptionId();
                     }
                 }
-                optionSize.put(String.valueOf(sizeID), selectedProductSize.getProduct_option_value_id());
-                optionSize.put(String.valueOf(colorID), selectedProductColor.getProduct_option_value_id());
+
+                if (sizeID != 0)
+                    optionSize.put(String.valueOf(sizeID), selectedProductSize.getProduct_option_value_id());
+
+                if (colorID != 0)
+                    optionSize.put(String.valueOf(colorID), selectedProductColor.getProduct_option_value_id());
+
                 optionSize.put(String.valueOf(timeID), selectedProductTime.getProduct_option_value_id());
                 String selectedDate = ((TextView) getActivity().findViewById(R.id.product_bookingdate_tv)).getText().toString();
-                if(selectedDate != "") {
+                if (selectedDate != "") {
                     optionSize.put(String.valueOf(dateID), selectedDate);
-                }
-                else {
+                } else {
                     //Error Message TODO Mahesh
                 }
 
@@ -1051,27 +1384,36 @@ public class ProductFragment extends Fragment {
             JsonRequest addToCart = new JsonRequest(Request.Method.POST, url, jo, new Response.Listener<JSONObject>() {
                 @Override
                 public void onResponse(JSONObject response) {
-                    if (BuildConfig.DEBUG) Timber.d("AddToCartResponse: %s", response);
-                    if (addToCartImage != null) addToCartImage.setVisibility(View.VISIBLE);
-                    if (addToCartProgress != null)
-                        addToCartProgress.setVisibility(View.INVISIBLE);
+                    if (response != null) {
+                        if (response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                            LoginDialogFragment.logoutUser(true);
+                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                            loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                        } else {
+                            if (BuildConfig.DEBUG) Timber.d("AddToCartResponse: %s", response);
+                            if (addToCartImage != null) addToCartImage.setVisibility(View.VISIBLE);
+                            if (addToCartProgress != null)
+                                addToCartProgress.setVisibility(View.INVISIBLE);
 
-                    //Analytics.logAddProductToCart(product.getRemoteId(), product.getName(), product.getDiscountPrice());
-                    MainActivity.updateCartCountNotification();
+                            //Analytics.logAddProductToCart(product.getRemoteId(), product.getName(), product.getDiscountPrice());
+                            MainActivity.updateCartCountNotification();
 
-                    String result = getString(R.string.Product) + " " + getString(R.string.added_to_cart);
-                    Snackbar snackbar = Snackbar.make(productContainer, result, Snackbar.LENGTH_LONG)
-                            .setActionTextColor(ContextCompat.getColor(getActivity(), R.color.colorAccent))
-                            .setAction(R.string.Go_to_cart, new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    if (getActivity() instanceof MainActivity)
-                                        ((MainActivity) getActivity()).onCartSelected();
-                                }
-                            });
-                    TextView textView = (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
-                    textView.setTextColor(Color.WHITE);
-                    snackbar.show();
+                            String result = getString(R.string.Product) + " " + getString(R.string.added_to_cart);
+                            Snackbar snackbar = Snackbar.make(productContainer, result, Snackbar.LENGTH_LONG)
+                                    .setActionTextColor(ContextCompat.getColor(getActivity(), R.color.colorAccent))
+                                    .setAction(R.string.Go_to_cart, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            if (getActivity() instanceof MainActivity)
+                                                ((MainActivity) getActivity()).onCartSelected();
+                                        }
+                                    });
+                            TextView textView = (TextView) snackbar.getView().findViewById(android.support.design.R.id.snackbar_text);
+                            textView.setTextColor(Color.WHITE);
+                            snackbar.show();
+                        }
+                    } else
+                        Timber.d("returned null response during post product to cart.");
                 }
             }, new Response.ErrorListener() {
                 @Override

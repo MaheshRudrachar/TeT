@@ -26,6 +26,8 @@ public class DeserializerFilters implements JsonDeserializer<Filters> {
     public static final String FILTER_TYPE_COLOR = "color";
     public static final String FILTER_TYPE_SELECT = "select";
     public static final String FILTER_TYPE_RANGE = "range";
+    public static final String FILTER_TYPE_PUJA = "puja_type";
+    public static final String FILTER_TYPE_DEITY = "deity_god";
 
 
     @Override
@@ -76,7 +78,7 @@ public class DeserializerFilters implements JsonDeserializer<Filters> {
                 }
             }
             if (!filterList.isEmpty())
-                filters.setFilters(filterList);
+                //filters.setFilters(filterList);
             return filters;
         }
         throw new JsonParseException("Unexpected JSON type: " + json.getClass().getSimpleName());

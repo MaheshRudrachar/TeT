@@ -13,6 +13,36 @@ public class Shop {
     private String store_open;
     private String store_language;
 
+    public String getStore_address() {
+        return store_address;
+    }
+
+    public void setStore_address(String store_address) {
+        this.store_address = store_address;
+    }
+
+    private String store_address;
+
+    public String getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(String statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public void setStatusText(String statusText) {
+        this.statusText = statusText;
+    }
+
+    private String statusCode;
+    private String statusText;
+
+
     @SerializedName("thumb")
     private String thumb;
 

@@ -34,10 +34,13 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
 import android.transition.TransitionInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.android.volley.Request;
@@ -62,17 +65,21 @@ import com.teketys.templetickets.entities.drawerMenu.DrawerItemCategory;
 import com.teketys.templetickets.entities.drawerMenu.DrawerItemPage;
 import com.teketys.templetickets.entities.order.CustomerOrder;
 import com.teketys.templetickets.interfaces.LoginDialogInterface;
+import com.teketys.templetickets.mylibrary.ShowcaseView;
+import com.teketys.templetickets.mylibrary.targets.ViewTarget;
 import com.teketys.templetickets.utils.Analytics;
 import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.MyRegistrationIntentService;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
 import com.teketys.templetickets.ux.fragments.AccountEditFragment;
 import com.teketys.templetickets.ux.fragments.AccountFragment;
 import com.teketys.templetickets.ux.fragments.BannersFragment;
 import com.teketys.templetickets.ux.fragments.CartFragment;
 import com.teketys.templetickets.ux.fragments.CategoryFragment;
 import com.teketys.templetickets.ux.fragments.DrawerFragment;
+import com.teketys.templetickets.ux.fragments.HomeFragment;
 import com.teketys.templetickets.ux.fragments.OrderCreateFragment;
 import com.teketys.templetickets.ux.fragments.OrderFragment;
 import com.teketys.templetickets.ux.fragments.OrdersHistoryFragment;
@@ -93,6 +100,13 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
     private static MainActivity mInstance = null;
 
     private ProgressDialog pDialog;
+
+    private ShowcaseView showcaseView;
+    private int counter = 0;
+    ImageView b1;
+    ImageView b2;
+    ImageView b4;
+    ScrollView vscrollView;
 
     /**
      * Reference tied drawer menu, represented as fragment.
@@ -118,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
     // Fields used in searchView.
     private SimpleCursorAdapter searchSuggestionsAdapter;
-    private ArrayList<String> searchSuggestionsList;
+    private ArrayList<DrawerItemCategory> searchSuggestionsList;
 
     /**
      * Refresh notification number of products in shopping cart.
@@ -128,6 +142,15 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         MainActivity instance = MainActivity.getInstance();
         if (instance != null) {
             instance.getCartCount(false);
+        } else {
+            Timber.e(MSG_MAIN_ACTIVITY_INSTANCE_IS_NULL);
+        }
+    }
+
+    public static void updateCartCountNotification(int count) {
+        MainActivity instance = MainActivity.getInstance();
+        if (instance != null) {
+            instance.showNotifyCount(count);
         } else {
             Timber.e(MSG_MAIN_ACTIVITY_INSTANCE_IS_NULL);
         }
@@ -169,6 +192,55 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
      */
     private static synchronized MainActivity getInstance() {
         return mInstance;
+    }
+
+    private void tutorial() {
+
+        //setContentView(R.layout.tutorial_main);
+
+        b1=(ImageView)findViewById(R.id.b1);
+        b1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent ani1 = new Intent(MainActivity.this, ScreenOne.class);
+                startActivity(ani1);
+
+            }
+        });
+
+        b2=(ImageView)findViewById(R.id.b2);
+        b2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent ani2 = new Intent(MainActivity.this, ScreenTwo.class);
+                startActivity(ani2);
+
+            }
+        });
+
+        b4=(ImageView)findViewById(R.id.b4);
+        b4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent ani4 = new Intent(MainActivity.this, ScreenFour.class);
+                startActivity(ani4);
+
+            }
+        });
+
+        vscrollView=(ScrollView)findViewById(R.id.scrollView);
+
+        showcaseView = new ShowcaseView.Builder(this)
+                .withMaterialShowcase()
+                .setStyle(R.style.CustomShowcaseTheme3)
+                .setTarget(new ViewTarget(findViewById(R.id.b1)))
+                //.setOnClickListener()
+                .setContentTitle("Puja Counter")
+                .setContentText("You Can Book Puja's here")
+                .singleShot(42)
+                .build();
+
+        showcaseView.setButtonText(getString(R.string.next));
     }
 
     @Override
@@ -282,6 +354,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
             Analytics.logOpenedByNotification(target);
         }
+
+        tutorial();
     }
 
     /**
@@ -343,12 +417,26 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                 if (initialize) {
                     String url = String.format(EndPoints.CART);
 
-                    GsonRequest<CartResponse> getCartResponse = new GsonRequest<CartResponse>(Request.Method.GET, url, null, CartResponse.class, new Response.Listener<CartResponse>() {
+                    final GsonRequest<CartResponse> getCartResponse = new GsonRequest<CartResponse>(Request.Method.GET, url, null, CartResponse.class, new Response.Listener<CartResponse>() {
                         @Override
                         public void onResponse(@NonNull CartResponse response) {
-                            Timber.d("getCartCount: %s", response.toString());
-                            if(response.getCart() != null)
-                                showNotifyCount(response.getCart().getProductCount());
+                            if(response != null) {
+                                if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                    if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                        LoginDialogFragment.logoutUser(true);
+                                        DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                        loginExpiredDialogFragment.show(getSupportFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                    }
+                                }
+                                else {
+
+                                    Timber.d("getCartCount: %s", response.toString());
+                                    if (response.getCart() != null)
+                                        showNotifyCount(response.getCart().getProductCount());
+                                }
+                            }
+                            else
+                                Timber.d("Null response during getCartResponse....");
                         }
                     }, new Response.ErrorListener() {
                         @Override
@@ -385,9 +473,20 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                     GsonRequest<CartResponse> getCartResponse = new GsonRequest<CartResponse>(Request.Method.GET, url, null, CartResponse.class, new Response.Listener<CartResponse>() {
                         @Override
                         public void onResponse(@NonNull CartResponse response) {
-                            Timber.d("getCartCount: %s", response.toString());
-                            if(response.getCart() != null)
-                                showNotifyCount(response.getCart().getProductCount());
+                            if(response != null) {
+                                if(response.toString().toLowerCase().contains(CONST.RESPONSE_CODE) || response.toString().toLowerCase().contains(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getSupportFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                }
+                                else {
+                                    Timber.d("getCartCount: %s", response.toString());
+                                    if (response.getCart() != null)
+                                        showNotifyCount(response.getCart().getProductCount());
+                                }
+                            }
+                            else
+                                Timber.d("Null response during getCartResponse....");
                         }
                     }, new Response.ErrorListener() {
                         @Override
@@ -409,7 +508,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
      *
      * @param newCartCount cart count to show.
      */
-    private void showNotifyCount(int newCartCount) {
+    public void showNotifyCount(int newCartCount) {
         cartCountNotificationValue = newCartCount;
         Timber.d("Update cart count notification: %d", cartCountNotificationValue);
         if (cartCountView != null) {
@@ -448,7 +547,8 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
 
             public boolean onQueryTextSubmit(String query) {
                 // Submit search query and hide search action view.
-                onSearchSubmitted(query);
+
+                onSearchSubmitted(query, CONST.SEARCHES.PUJA, 0);
                 searchView.setQuery("", false);
                 searchView.setIconified(true);
                 searchItem.collapseActionView();
@@ -466,7 +566,16 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             public boolean onSuggestionClick(int position) {
                 // Submit search suggestion query and hide search action view.
                 MatrixCursor c = (MatrixCursor) searchSuggestionsAdapter.getItem(position);
-                onSearchSubmitted(c.getString(1));
+                long categoryId = 0;
+
+                for(DrawerItemCategory dic : searchSuggestionsList) {
+                    if(dic.getName().toLowerCase().equals(c.getString(1).toLowerCase())) {
+                        categoryId = dic.getOriginalId();
+                        break;
+                    }
+                }
+
+                onSearchSubmitted(c.getString(1), CONST.SEARCHES.TEMPLE, categoryId);
                 searchView.setQuery("", false);
                 searchView.setIconified(true);
                 searchItem.collapseActionView();
@@ -487,8 +596,13 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
             Timber.d("Populate search adapter - mySuggestions.size(): %d", searchSuggestionsList.size());
             final MatrixCursor c = new MatrixCursor(new String[]{BaseColumns._ID, "categories"});
             for (int i = 0; i < searchSuggestionsList.size(); i++) {
-                if (searchSuggestionsList.get(i) != null && searchSuggestionsList.get(i).toLowerCase().startsWith(query.toLowerCase()))
-                    c.addRow(new Object[]{i, searchSuggestionsList.get(i)});
+                if(searchSuggestionsList.get(i) != null) {
+                    if(searchSuggestionsList.get(i).getName().toLowerCase().equals("temples"))
+                        searchSuggestionsList.remove(i);
+                }
+
+                if (searchSuggestionsList.get(i) != null && searchSuggestionsList.get(i).getName().toLowerCase().startsWith(query.toLowerCase()))
+                    c.addRow(new Object[]{i, searchSuggestionsList.get(i).getName()});
             }
             searchView.setSuggestionsAdapter(searchSuggestionsAdapter);
             searchSuggestionsAdapter.changeCursor(c);
@@ -506,14 +620,14 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                 null, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
         if (navigation != null && !navigation.isEmpty()) {
             for (int i = 0; i < navigation.size(); i++) {
-                if (!searchSuggestionsList.contains(navigation.get(i).getName())) {
-                    searchSuggestionsList.add(navigation.get(i).getName());
+                if (!searchSuggestionsList.contains(navigation.get(i))) {
+                    searchSuggestionsList.add(navigation.get(i));
                 }
 
                 if (navigation.get(i).hasChildren()) {
                     for (int j = 0; j < navigation.get(i).getChildren().size(); j++) {
-                        if (!searchSuggestionsList.contains(navigation.get(i).getChildren().get(j).getName())) {
-                            searchSuggestionsList.add(navigation.get(i).getChildren().get(j).getName());
+                        if (!searchSuggestionsList.contains(navigation.get(i).getChildren().get(j))) {
+                            searchSuggestionsList.add(navigation.get(i).getChildren().get(j));
                         }
                     }
                 }
@@ -599,10 +713,10 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
      *
      * @param searchQuery text used for products search.
      */
-    private void onSearchSubmitted(String searchQuery) {
+    private void onSearchSubmitted(String searchQuery, CONST.SEARCHES searchType, long categoryId) {
         clearBackStack();
         Timber.d("Called onSearchSubmitted with text: %s", searchQuery);
-        Fragment fragment = CategoryFragment.newInstance(searchQuery);
+        Fragment fragment = CategoryFragment.newInstance(searchQuery, searchType, categoryId);
         replaceFragment(fragment, CategoryFragment.class.getSimpleName());
     }
 
@@ -655,7 +769,7 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
      */
     public void onBannerSelected(Banner banner) {
         if (banner != null) {
-            String target = banner.getTarget();
+            String target = stripHtml(banner.getTarget());
             Timber.d("Open banner with target: %s", target);
             String[] targetParams = target.split(":");
             if (targetParams.length >= 2) {
@@ -667,7 +781,22 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
                     }
                     case "detail": {
                         Fragment fragment = ProductFragment.newInstance(Long.parseLong(targetParams[1]));
-                        replaceFragment(fragment, ProductFragment.class.getSimpleName() + " - banner select");
+                        replaceFragment(fragment, ProductFragment.class.getSimpleName() + "banner_select");
+                        break;
+                    }
+                    case "home": {
+                        Fragment homeFragment = HomeFragment.newInstance(Long.parseLong(targetParams[1]));
+                        replaceFragment(homeFragment, ProductFragment.class.getSimpleName() + "home_select");
+                        break;
+                    }
+                    case "recent": {
+                        Fragment orderHistoryFragment = OrdersHistoryFragment.newInstance(null);
+                        replaceFragment(orderHistoryFragment, OrdersHistoryFragment.class.getSimpleName() + "order_history_select");
+                        break;
+                    }
+                    case "slokas": {
+                        Fragment fragment = PageFragment.newInstance(EndPoints.SLOKAS_AND_MANTRAS);
+                        replaceFragment(fragment, PageFragment.class.getSimpleName() + "slokas_and_mantras_select");
                         break;
                     }
                     default:
@@ -680,6 +809,10 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
         } else {
             Timber.e("onBannerSelected called with null parameters.");
         }
+    }
+
+    public String stripHtml(String html) {
+        return Html.fromHtml(html).toString();
     }
 
     /**
@@ -707,6 +840,16 @@ public class MainActivity extends AppCompatActivity implements DrawerFragment.Fr
      * Launch {@link CCAvenueFragment}.
      */
     public void startPaymentFragment(Bundle bundle) {
+        Fragment fragment = new CCAvenueFragment();
+
+        fragment.setArguments(bundle);
+        replaceFragment(fragment, CCAvenueFragment.class.getSimpleName());
+    }
+
+    /**
+     * Launch {@link CCAvenueFragment}.
+     */
+    public void redirectTempleFragment(Bundle bundle) {
         Fragment fragment = new CCAvenueFragment();
 
         fragment.setArguments(bundle);

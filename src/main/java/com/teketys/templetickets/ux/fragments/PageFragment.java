@@ -8,11 +8,15 @@ import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.TextView;
 
 import com.android.volley.Request;
@@ -26,9 +30,15 @@ import com.teketys.templetickets.SettingsMy;
 import com.teketys.templetickets.api.EndPoints;
 import com.teketys.templetickets.api.GsonRequest;
 import com.teketys.templetickets.entities.Page;
+import com.teketys.templetickets.entities.PageResponse;
 import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.utils.Utils;
 import com.teketys.templetickets.ux.MainActivity;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
+
+import java.util.regex.Matcher;
+
 import timber.log.Timber;
 
 /**
@@ -41,7 +51,9 @@ public class PageFragment extends Fragment {
      * Name for input argument.
      */
     private static final String PAGE_ID = "page_id";
+    private static final String PAGE_URL = "url";
 
+    //private static final long TERMS_AND_CONDITIONS = -131;
     private static final long TERMS_AND_CONDITIONS = -131;
 
     private ProgressDialog progressDialog;
@@ -73,6 +85,15 @@ public class PageFragment extends Fragment {
         return fragment;
     }
 
+    public static PageFragment newInstance(String url) {
+        Bundle args = new Bundle();
+        args.putString(PageFragment.PAGE_URL, url);
+        args.putLong(PageFragment.PAGE_ID, 0);
+        PageFragment fragment = new PageFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     /**
      * Create fragment instance which displays Terms and Conditions defined on server.
      *
@@ -91,8 +112,6 @@ public class PageFragment extends Fragment {
         Timber.d("%s - onCreateView", this.getClass().getSimpleName());
         View view = inflater.inflate(R.layout.fragment_page, container, false);
 
-        MainActivity.setActionBarTitle(getString(R.string.app_name));
-
         progressDialog = Utils.generateProgressDialog(getActivity(), false);
 
         layoutEmpty = view.findViewById(R.id.page_empty);
@@ -103,8 +122,13 @@ public class PageFragment extends Fragment {
 
         // Check if fragment received some arguments.
         if (getArguments() != null && getArguments().getLong(PAGE_ID) != 0L) {
+            MainActivity.setActionBarTitle(getString(R.string.app_name));
             getPage(getArguments().getLong(PAGE_ID));
-        } else {
+        } else if(getArguments() != null && getArguments().getString(PAGE_URL) != null && getArguments().getString(PAGE_URL) != "") {
+            MainActivity.setActionBarTitle(getString(R.string.slokas_and_mantras));
+            handleMantrasAndSlokasPage(getArguments().getString(PAGE_URL));
+        }
+        else {
             Timber.e(new RuntimeException(), "Created fragment with null arguments.");
             setContentVisible(false);
             MsgUtils.showToast(getActivity(), MsgUtils.TOAST_TYPE_INTERNAL_ERROR, "", MsgUtils.ToastLength.LONG);
@@ -122,16 +146,29 @@ public class PageFragment extends Fragment {
         if (pageId == TERMS_AND_CONDITIONS) {
             url = String.format(EndPoints.PAGES_TERMS_AND_COND, SettingsMy.getActualNonNullShop(getActivity()).getId());
         } else {
-            url = String.format(EndPoints.PAGES_SINGLE, SettingsMy.getActualNonNullShop(getActivity()).getId(), pageId);
+            url = String.format(EndPoints.PAGES_SINGLE, pageId);
         }
 
         progressDialog.show();
 
-        GsonRequest<Page> getPage = new GsonRequest<>(Request.Method.GET, url, null, Page.class,
-                new Response.Listener<Page>() {
+        GsonRequest<PageResponse> getPage = new GsonRequest<>(Request.Method.GET, url, null, PageResponse.class,
+                new Response.Listener<PageResponse>() {
                     @Override
-                    public void onResponse(@NonNull Page response) {
-                        handleResponse(response);
+                    public void onResponse(@NonNull PageResponse response) {
+                        if(response != null) {
+                            if(response.getStatusCode() != null && response.getStatusText() != null) {
+                                if (response.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || response.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                                    LoginDialogFragment.logoutUser(true);
+                                    DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                                    loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                                    if (progressDialog != null) progressDialog.cancel();
+                                }
+                            }
+                            else
+                                handleResponse(response.getPage());
+                        }
+                        else
+                            Timber.d("Null response during getPage....");
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -152,16 +189,18 @@ public class PageFragment extends Fragment {
      * @param page page data received from server.
      */
     private void handleResponse(Page page) {
-        if (page != null && page.getText() != null && !page.getText().isEmpty()) {
+        if (page != null && page.getDescription() != null && !page.getDescription().isEmpty()) {
             setContentVisible(true);
-            pageTitle.setText(page.getTitle());
-            String data = page.getText();
+            pageTitle.setText(stripHtml(page.getTitle()));
+            String data = page.getDescription(); //.replaceAll("\"", Matcher.quoteReplacement("\\\""));
             String header = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">"
                     + "<html>  <head>  <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">"
                     + "</head>  <body>";
             String footer = "</body></html>";
 
-            pageContent.loadData(header + data + footer, "text/html; charset=UTF-8", null);
+            Timber.d("response of data*** %s", data);
+            pageContent.loadData(header + stripHtml(data) + footer, "text/html; charset=UTF-8", null);
+            //pageContent.loadDataWithBaseURL(null, header + data + footer, "text/html", "UTF-8", null);
         } else {
             setContentVisible(false);
         }
@@ -172,6 +211,35 @@ public class PageFragment extends Fragment {
                 if (progressDialog != null) progressDialog.cancel();
             }
         }, 200);
+    }
+
+    private void handleMantrasAndSlokasPage(String url) {
+        if(url != null) {
+            setContentVisible(true);
+
+            WebSettings webSetting = pageContent.getSettings();
+            webSetting.setBuiltInZoomControls(true);
+            webSetting.setJavaScriptEnabled(true);
+
+            pageTitle.setText(stripHtml(CONST.SLOKAS_AND_MANTRAS_TAG));
+            pageContent.setWebViewClient(new WebViewClient());
+            pageContent.loadUrl(url);
+        }
+        else {
+            setContentVisible(false);
+        }
+
+        // Slow disappearing of progressDialog due to slow page content processing.
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (progressDialog != null) progressDialog.cancel();
+            }
+        }, 200);
+    }
+
+    public String stripHtml(String html) {
+        return Html.fromHtml(html).toString();
     }
 
     /**

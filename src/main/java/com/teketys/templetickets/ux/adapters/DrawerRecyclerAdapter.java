@@ -7,6 +7,7 @@ package com.teketys.templetickets.ux.adapters;
 import android.content.Context;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -96,7 +97,7 @@ public class DrawerRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
             DrawerItemPage drawerItemPage = getPageItem(position);
             viewHolderItemPage.bindContent(drawerItemPage);
-            viewHolderItemPage.itemText.setText(drawerItemPage.getName());
+            viewHolderItemPage.itemText.setText(stripHtml(drawerItemPage.getName()));
         } else if (holder instanceof ViewHolderHeader) {
             ViewHolderHeader viewHolderHeader = (ViewHolderHeader) holder;
 
@@ -107,6 +108,10 @@ public class DrawerRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vie
                 viewHolderHeader.userName.setText(context.getString(R.string.Unknown_user));
             }
         }
+    }
+
+    public String stripHtml(String html) {
+        return Html.fromHtml(html).toString();
     }
 
     @Override

@@ -27,6 +27,7 @@ public class SettingsMy {
     public static final String API_ACCESS_TOKEN = "api_access_token";
     public static final String OLD_ACCESS_TOKEN = "old_token";
     public static final String PAGE_COUNT = "page_count";
+    public static final String TOTAL_PAGE_COUNT = "total_page_count";
 
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
     public static final String REGISTRATION_COMPLETE = "registrationComplete";
@@ -76,6 +77,20 @@ public class SettingsMy {
         String oldToken = prefs.getString(OLD_ACCESS_TOKEN, "");
         Timber.d("%s - Obtained old access token: %s", TAG, oldToken);
         return oldToken;
+    }
+
+    public static void setTotalPageCount(Integer page) {
+        Timber.d("%s - Set total page count : %d", TAG, page);
+        SharedPreferences.Editor editor = getSettings().edit();
+        editor.remove(TOTAL_PAGE_COUNT);
+        putParam(TOTAL_PAGE_COUNT, page);
+    }
+
+    public static Integer getTotalPageCount() {
+        SharedPreferences prefs = getSettings();
+        Integer totalPageCount = prefs.getInt(TOTAL_PAGE_COUNT, 0);
+        Timber.d("%s - Returned total page count from memory: %d", TAG, totalPageCount);
+        return totalPageCount;
     }
 
     public static void setActualPage(Integer page) {

@@ -7,6 +7,7 @@ package com.teketys.templetickets.ux.fragments;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -29,6 +30,7 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.teketys.templetickets.CONST;
@@ -39,12 +41,16 @@ import com.teketys.templetickets.api.EndPoints;
 import com.teketys.templetickets.api.GsonRequest;
 import com.teketys.templetickets.entities.drawerMenu.DrawerItemCategory;
 import com.teketys.templetickets.entities.drawerMenu.DrawerItemPage;
+import com.teketys.templetickets.entities.drawerMenu.DrawerItemPageResponse;
 import com.teketys.templetickets.entities.drawerMenu.DrawerResponse;
 import com.teketys.templetickets.interfaces.DrawerRecyclerInterface;
 import com.teketys.templetickets.interfaces.DrawerSubmenuRecyclerInterface;
 import com.teketys.templetickets.utils.MsgUtils;
 import com.teketys.templetickets.ux.adapters.DrawerRecyclerAdapter;
 import com.teketys.templetickets.ux.adapters.DrawerSubmenuRecyclerAdapter;
+import com.teketys.templetickets.ux.dialogs.LoginDialogFragment;
+import com.teketys.templetickets.ux.dialogs.LoginExpiredDialogFragment;
+
 import timber.log.Timber;
 
 /**
@@ -290,17 +296,27 @@ public class DrawerFragment extends Fragment {
         GsonRequest<DrawerResponse> getDrawerMenu = new GsonRequest<>(Request.Method.GET, url, null, DrawerResponse.class, new Response.Listener<DrawerResponse>() {
             @Override
             public void onResponse(@NonNull DrawerResponse drawerResponse) {
-                drawerRecyclerAdapter.addDrawerItem(new DrawerItemCategory(BANNERS_ID, BANNERS_ID, getString(R.string.Just_arrived)));
-                drawerRecyclerAdapter.addDrawerItemList(drawerResponse.getNavigation());
-                drawerRecyclerAdapter.addPageItemList(drawerResponse.getPages());
-                drawerRecyclerAdapter.notifyDataSetChanged();
-
-                if (drawerListener != null)
-                    drawerListener.prepareSearchSuggestions(drawerResponse.getNavigation());
-
-                drawerLoading = false;
-                if (drawerRecycler != null) drawerRecycler.setVisibility(View.VISIBLE);
-                if (drawerProgress != null) drawerProgress.setVisibility(View.GONE);
+                if(drawerResponse != null) {
+                    if(drawerResponse.getStatusCode() != null && drawerResponse.getStatusText() != null) {
+                        if (drawerResponse.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || drawerResponse.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                            LoginDialogFragment.logoutUser(true);
+                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                            loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                            drawerLoading = false;
+                            if (drawerProgress != null) drawerProgress.setVisibility(View.GONE);
+                            if (drawerRetryBtn != null) drawerRetryBtn.setVisibility(View.VISIBLE);
+                        }
+                    }
+                    else {
+                        drawerRecyclerAdapter.addDrawerItem(new DrawerItemCategory(BANNERS_ID, BANNERS_ID, getString(R.string.Just_arrived)));
+                        drawerRecyclerAdapter.addDrawerItemList(drawerResponse.getNavigation());
+                        drawerRecyclerAdapter.notifyDataSetChanged();
+                        //Initiate Page Item List
+                        preparePageItemList(drawerResponse);
+                    }
+                }
+                else
+                    Timber.d("Null response during getDrawerItems....");
             }
         }, new Response.ErrorListener() {
             @Override
@@ -314,6 +330,69 @@ public class DrawerFragment extends Fragment {
         getDrawerMenu.setRetryPolicy(MyApplication.getDefaultRetryPolice());
         getDrawerMenu.setShouldCache(false);
         MyApplication.getInstance().addToRequestQueue(getDrawerMenu, CONST.DRAWER_REQUESTS_TAG);
+    }
+
+    private void preparePageItemList(final DrawerResponse drawerResponse) {
+
+        String url = String.format(EndPoints.PAGES, SettingsMy.getActualNonNullShop(getActivity()).getId());
+        final GsonRequest<DrawerItemPageResponse> getDrawerPageMenu = new GsonRequest<>(Request.Method.GET, url, null, DrawerItemPageResponse.class, new Response.Listener<DrawerItemPageResponse>() {
+            @Override
+            public void onResponse(@NonNull DrawerItemPageResponse drawerItemPageResponse) {
+
+                List<DrawerItemPage> drawItemPages = new ArrayList<>();
+
+                if(drawerItemPageResponse != null) {
+                    if(drawerItemPageResponse.getStatusText() != null && drawerItemPageResponse.getStatusCode() != null) {
+                        if (drawerItemPageResponse.getStatusCode().toLowerCase().equals(CONST.RESPONSE_CODE) || drawerItemPageResponse.getStatusText().toLowerCase().equals(CONST.RESPONSE_UNAUTHORIZED)) {
+                            LoginDialogFragment.logoutUser(true);
+                            DialogFragment loginExpiredDialogFragment = new LoginExpiredDialogFragment();
+                            loginExpiredDialogFragment.show(getFragmentManager(), LoginExpiredDialogFragment.class.getSimpleName());
+                            drawerLoading = false;
+                            if (drawerProgress != null) drawerProgress.setVisibility(View.GONE);
+                            if (drawerRetryBtn != null) drawerRetryBtn.setVisibility(View.VISIBLE);
+                        }
+                    }
+                    else {
+                        if (drawerItemPageResponse.getPages() != null) {
+
+                            if (drawerItemPageResponse.getPages().size() > 0) {
+                                for (DrawerItemPage dip : drawerItemPageResponse.getPages()) {
+                                    if (!dip.getName().toLowerCase().contains(CONST.SLOKAS_TAG)) {
+                                        drawItemPages.add(dip);
+                                    }
+                                }
+
+                                drawerRecyclerAdapter.addPageItemList(drawItemPages);
+                            } else {
+                                Timber.d("Populate Item Page with null drawer item.");
+                            }
+
+                            drawerRecyclerAdapter.notifyDataSetChanged();
+
+                            if (drawerListener != null)
+                                drawerListener.prepareSearchSuggestions(drawerResponse.getNavigation());
+
+                            drawerLoading = false;
+                            if (drawerRecycler != null) drawerRecycler.setVisibility(View.VISIBLE);
+                            if (drawerProgress != null) drawerProgress.setVisibility(View.GONE);
+                        }
+                    }
+                }
+                else
+                    Timber.d("Null response during preparePageItemList....");
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                MsgUtils.logAndShowErrorMessage(getActivity(), error);
+                drawerLoading = false;
+                if (drawerProgress != null) drawerProgress.setVisibility(View.GONE);
+                if (drawerRetryBtn != null) drawerRetryBtn.setVisibility(View.VISIBLE);
+            }
+        });
+        getDrawerPageMenu.setRetryPolicy(MyApplication.getDefaultRetryPolice());
+        getDrawerPageMenu.setShouldCache(false);
+        MyApplication.getInstance().addToRequestQueue(getDrawerPageMenu, CONST.DRAWER_REQUESTS_TAG);
     }
 
     private void animateSubListHide() {

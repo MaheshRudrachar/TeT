@@ -40,7 +40,8 @@
         android:focusable="true"
         android:orientation="vertical"
         android:paddingBottom="@dimen/base_margin_vertical"
-        android:paddingTop="@dimen/base_margin_vertical">
+        android:paddingTop="@dimen/base_margin_vertical"
+        android:visibility="invisible">
 
         <TextView
             android:layout_width="match_parent"

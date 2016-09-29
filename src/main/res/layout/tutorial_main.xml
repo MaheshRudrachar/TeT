@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:weightSum="1"
+        android:orientation="vertical"
+        android:baselineAligned="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:src="@drawable/pujacounter"
+            android:id="@+id/b1"
+            android:layout_height="wrap_content"
+            android:contextClickable="true" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/recentlybooked"
+            android:id="@+id/b2" />
+
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/mantrasandshlokas"
+            android:id="@+id/b4"/>
+    </LinearLayout>
+
+</LinearLayout>

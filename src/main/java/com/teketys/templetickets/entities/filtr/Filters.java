@@ -9,21 +9,17 @@ import java.util.List;
 
 public class Filters {
 
-    // Values parsed from API
-    private List<FilterType> filters;
+    public List<FilterGroups> getFilterGroups() {
+        return filterGroups;
+    }
+
+    public void setFilterGroups(List<FilterGroups> filterGroups) {
+        this.filterGroups = filterGroups;
+    }
+
+    private List<FilterGroups> filterGroups;
+
 
     public Filters() {
-    }
-
-    public Filters(List<FilterType> filters) {
-        this.filters = filters;
-    }
-
-    public List<FilterType> getFilters() {
-        return filters;
-    }
-
-    public void setFilters(List<FilterType> filters) {
-        this.filters = filters;
     }
 }

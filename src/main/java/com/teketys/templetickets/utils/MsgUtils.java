@@ -28,6 +28,11 @@ public class MsgUtils {
     public static final int TOAST_TYPE_NO_SIZE_SELECTED = 5;
     public static final int TOAST_TYPE_NO_DATE_SELECTED = 6;
     public static final int TOAST_TYPE_NO_TIME_SELECTED = 7;
+    public static final int TOAST_TYPE_NO_PRODUCTS_AVAILABLE = 8;
+    public static final int TOAST_TYPE_NO_MORE_PRODUCTS_AVAILABLE = 9;
+    public static final int TOAST_TYPE_NO_CURRENT_BOOKING_DATE = 10;
+    public static final int TOAST_TYPE_INVALID_CREDENTIALS = 11;
+    public static final int TOAST_TYPE_INVALID_EMAIL = 12;
 
     public static void logErrorMessage(VolleyError error) {
         try {
@@ -44,6 +49,7 @@ public class MsgUtils {
     public static void logAndShowErrorMessage(Activity activity, VolleyError error) {
         try {
             String errorData = new String(error.networkResponse.data);
+            Timber.d("Error Message******* %s", errorData);
             showMessage(activity, new JSONObject(errorData));
         } catch (Exception e) {
             if (error.getMessage() != null && !error.getMessage().isEmpty())
@@ -123,6 +129,21 @@ public class MsgUtils {
                 break;
             case TOAST_TYPE_NO_DATE_SELECTED:
                 str = activity.getString(R.string.Please_select_a_date);
+                break;
+            case TOAST_TYPE_NO_PRODUCTS_AVAILABLE:
+                str = activity.getString(R.string.Products_not_found);
+                break;
+            case TOAST_TYPE_NO_MORE_PRODUCTS_AVAILABLE:
+                str = activity.getString(R.string.No_more_products_found);
+                break;
+            case TOAST_TYPE_NO_CURRENT_BOOKING_DATE:
+                str = activity.getString(R.string.Booking_date_cannot_be_current);
+                break;
+            case TOAST_TYPE_INVALID_CREDENTIALS:
+                str = activity.getString(R.string.Invalid_credentials);
+                break;
+            case TOAST_TYPE_INVALID_EMAIL:
+                str = activity.getString(R.string.Invalid_email);
                 break;
         }
 
