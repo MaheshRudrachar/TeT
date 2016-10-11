@@ -12,9 +12,16 @@ public class EndPoints {
     /**
      * Base server url.
      */
-    private static final String API_URL                 = "http://ec2-52-54-27-19.compute-1.amazonaws.com/api/rest/";    // staging
-    private static final String API_FQ_URL              = "http://ec2-52-54-27-19.compute-1.amazonaws.com/index.php?route=feed/rest_api/";    // staging
-    private static final String API_SAM_URL             = "http://ec2-52-54-27-19.compute-1.amazonaws.com/assets/index_e.html";
+    //Stage - ec2-52-54-27-19.compute-1.amazonaws.com
+
+    private static final String API_URL                 = "https://teketys.templetickets.in/api/rest/";    // staging
+    private static final String API_FQ_URL              = "https://teketys.templetickets.in/index.php?route=feed/rest_api/";    // staging
+    private static final String API_SAM_URL             = "https://teketys.templetickets.in/assets/mantras_and_shlokas/index_e.html";
+    private static final String API_PP_URL              = "https://teketys.templetickets.in/assets/information/privacypolicy.html";
+    private static final String API_AU_URL              = "https://teketys.templetickets.in/assets/information/aboutus.html";
+    private static final String API_CU_URL              = "https://teketys.templetickets.in/assets/information/contactus.html";
+    private static final String API_TAC_URL             = "https://teketys.templetickets.in/assets/information/termsandcondition.html";
+    private static final String API_TH_URL              = "https://teketys.templetickets.in/assets/temples_history/temples/%s/%s";
     public static final String OAUTH_TOKEN              = API_URL.concat("oauth2/token/client_credentials");
     public static final String SHOPS                    = API_URL.concat("stores");
     public static final String SHOPS_SINGLE             = API_URL.concat("stores/%d");
@@ -26,7 +33,8 @@ public class EndPoints {
     public static final String PAGES_SINGLE             = API_URL.concat("information/%d");
     public static final String PAGES_TERMS_AND_COND     = API_URL.concat("information/5");
     public static final String PAGES_SLOKAS             = API_URL.concat("information/7");
-    public static final String PRODUCTS                 = API_URL.concat("products/category/%d/limit/4/page/%d");
+    //public static final String PRODUCTS                 = API_URL.concat("products/category/%d/limit/10/page/%d");
+    public static final String PRODUCTS                 = API_URL.concat("products/category/%d");
     public static final String PRODUCTS_SINGLE          = API_URL.concat("products/%d");
     public static final String PRODUCTS_SEARCH          = API_URL.concat("products/search/%s/limit/4/page/%d");
     public static final String PRODUCTS_SINGLE_RELATED  = API_URL.concat("related/%d");
@@ -55,7 +63,11 @@ public class EndPoints {
     public static final String WISHLIST_SINGLE          = API_URL.concat("wishlist/%d");
     public static final String REGISTER_NOTIFICATION    = API_URL.concat("account");
     public static final String SLOKAS_AND_MANTRAS       = API_SAM_URL;
-
+    public static final String PRIVACY_POLICY           = API_PP_URL;
+    public static final String ABOUT_US                 = API_AU_URL;
+    public static final String TERMS_AND_CONDITIONS     = API_TAC_URL;
+    public static final String CONTACT_US               = API_CU_URL;
+    public static final String TEMPLE_HISTORY           = API_TH_URL;
 
     // Notifications parameters
     public static final String NOTIFICATION_LINK        = "link";
